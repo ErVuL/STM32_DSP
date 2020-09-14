@@ -262,21 +262,44 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
+  static uint8_t txLen;
   static uint8_t rxLen;
 
+  /* Get data from serial com */
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, Buf);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
 
   for(uint8_t i = 0; i < (*Len); i++){
-	  if((UserRxBufferFS[rxLen++] = Buf[i]) == '\r'){
-		  UserRxBufferFS[rxLen-1] = '\0';
-		  UserRxBufferFS[rxLen++] = '\r';
-		  UserRxBufferFS[rxLen++] = '\n';
+
+	  /* If Backspace key: clear the last char */
+	  if((UserTxBufferFS[txLen++] = Buf[i]) == '\b'){
+		  UserTxBufferFS[txLen++] = ' ';
+		  UserTxBufferFS[txLen++] = '\b';
+		  if(rxLen){
+			  rxLen--;
+		  }
+	  }
+	  /* Else if Enter key: add a \n to terminal and a \0 to output buffer */
+	  else if(Buf[i] == '\r'){
+		  UserTxBufferFS[txLen++] = '\r';
+		  UserTxBufferFS[txLen++] = '\n';
+		  UserRxBufferFS[rxLen++] = '\0';
+		  /*
+		   * TODO: extract UserRxBufferFS to main() or whatever through a "thread safe" solution
+		   */
+		  rxLen = 0;
+	  }
+	  /* Else copy data to receive buffer */
+	  else{
+		  UserRxBufferFS[rxLen++] = Buf[i];
 	  }
   }
-  if(CDC_Transmit_FS(UserRxBufferFS, rxLen) == USBD_OK){
-  rxLen = 0;
+
+  /* Send result to terminal */
+  if(CDC_Transmit_FS(UserTxBufferFS, txLen) == USBD_OK){
+  txLen = 0;
   }
+
   return (USBD_OK);
   /* USER CODE END 6 */
 }
