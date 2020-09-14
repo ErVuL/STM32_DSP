@@ -21,7 +21,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_cdc_if.h"
-
+#include <stdarg.h>
 /* USER CODE BEGIN INCLUDE */
 
 /* USER CODE END INCLUDE */
@@ -281,7 +281,6 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 	  }
 	  /* Else if Enter key: add a \n to terminal and a \0 to output buffer */
 	  else if(Buf[i] == '\r'){
-		  UserTxBufferFS[txLen++] = '\r';
 		  UserTxBufferFS[txLen++] = '\n';
 		  UserRxBufferFS[rxLen++] = '\0';
 		  /*
@@ -289,7 +288,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 		   */
 		  rxLen = 0;
 	  }
-	  /* Else copy data to receive buffer */
+	  /* Else only copy data */
 	  else{
 		  UserRxBufferFS[rxLen++] = Buf[i];
 	  }
@@ -302,6 +301,27 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 
   return (USBD_OK);
   /* USER CODE END 6 */
+}
+
+int Serial_Printf(const char *format, ...)
+{
+  /* Local variables */
+  va_list arg;
+  uint16_t Len = 1;
+
+  /* Compute the string length to send */
+  while(format[Len-1] != '\0' && Len < APP_TX_DATA_SIZE){Len++;}
+
+  /* Format the string */
+  va_start(arg, format);
+  sprintf((char*)UserTxBufferFS, format, arg);
+  va_end(arg);
+
+  /* Transmit the buffer through serial communication */
+  CDC_Transmit_FS(UserTxBufferFS, Len);
+
+  /* Exit success */
+  return(USBD_OK);
 }
 
 /**
