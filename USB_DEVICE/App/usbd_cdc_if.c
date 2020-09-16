@@ -266,8 +266,11 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   static uint8_t rxLen;
 
   /* Get data from serial com */
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, Buf);
-  USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+  if(USBD_CDC_SetRxBuffer(&hUsbDeviceFS, Buf) != USBD_OK || USBD_CDC_ReceivePacket(&hUsbDeviceFS) != USBD_OK)
+  {
+	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
+	  return(USBD_BUSY);;
+  }
 
   for(uint8_t i = 0; i < (*Len); i++){
 
@@ -296,32 +299,35 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 
   /* Send result to terminal */
   if(CDC_Transmit_FS(UserTxBufferFS, txLen) == USBD_OK){
-  txLen = 0;
+	  txLen = 0;
   }
-
+  else
+  {
+	  /* Exit warning */
+	  return(USBD_BUSY);
+  }
+  /* Exit success */
   return (USBD_OK);
   /* USER CODE END 6 */
 }
 
-int Serial_Printf(const char *format, ...)
+uint8_t CDC_Printf(const char *format, ...)
 {
   /* Local variables */
   va_list arg;
   uint16_t Len = 1;
 
   /* Compute the string length to send */
-  while(format[Len-1] != '\0' && Len < APP_TX_DATA_SIZE){Len++;}
+  while(format[Len] != '\0' && Len <= APP_TX_DATA_SIZE){Len++;}
 
   /* Format the string */
   va_start(arg, format);
-  sprintf((char*)UserTxBufferFS, format, arg);
+  vsprintf((char*)UserTxBufferFS, format, arg);
   va_end(arg);
 
   /* Transmit the buffer through serial communication */
-  CDC_Transmit_FS(UserTxBufferFS, Len);
+  return CDC_Transmit_FS(UserTxBufferFS, Len);
 
-  /* Exit success */
-  return(USBD_OK);
 }
 
 /**
@@ -337,16 +343,27 @@ int Serial_Printf(const char *format, ...)
   */
 uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 {
-  uint8_t result = USBD_OK;
-  /* USER CODE BEGIN 7 */
+
+	/* USER CODE BEGIN 7 */
   USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
-  if (hcdc->TxState != 0){
+  if (hcdc->TxState != 0)
+  {
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
     return USBD_BUSY;
   }
+
   USBD_CDC_SetTxBuffer(&hUsbDeviceFS, Buf, Len);
-  result = USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+
+  if(USBD_CDC_TransmitPacket(&hUsbDeviceFS) == USBD_OK)
+  {
+	  return USBD_OK;
+  }
+  else
+  {
+	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
+	  return USBD_BUSY;
+  }
   /* USER CODE END 7 */
-  return result;
 }
 
 /**

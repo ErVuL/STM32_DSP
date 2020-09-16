@@ -20,7 +20,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usb_device.h"
-
+#include "usbd_cdc_if.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -106,7 +106,6 @@ int main(void)
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
@@ -125,8 +124,22 @@ int main(void)
   MX_SPI1_Init();
   MX_I2S2_Init();
   MX_USB_DEVICE_Init();
+
   /* USER CODE BEGIN 2 */
-  HAL_I2SEx_TransmitReceive_DMA (&hi2s2, txBuf, rxBuf, 4);
+  HAL_I2SEx_TransmitReceive_DMA(&hi2s2, txBuf, rxBuf, 4);
+  HAL_Delay(1500);
+  CDC_Printf("\n\n\n\n\n");
+  CDC_Printf("\r\n *** DSP V0.0 ***");
+  CDC_Printf("\r\n ================\n\n");
+  CDC_Printf("\r\n[    ] Hardware initialization");
+  if(HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_14) == GPIO_PIN_RESET)
+  {
+	CDC_Printf("\r[ OK ]\r\n");
+  }
+  else
+  {
+	CDC_Printf("\r[ ER ]\r\n");
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -134,7 +147,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
+	HAL_Delay(2000);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -484,7 +497,7 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
-
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
   /* USER CODE END Error_Handler_Debug */
 }
 
