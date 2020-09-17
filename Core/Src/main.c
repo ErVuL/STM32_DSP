@@ -28,7 +28,6 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -64,6 +63,7 @@ static void MX_DMA_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_I2S2_Init(void);
+
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -140,18 +140,28 @@ int main(void)
   {
 	CDC_Printf("\r[ ER ]\r\n");
   }
+  CDC_Printf("\n");
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  char cmd[256];
+  cmd[0] = '\0';
+
   while (1)
   {
     /* USER CODE END WHILE */
-	HAL_Delay(2000);
-    /* USER CODE BEGIN 3 */
+	//HAL_Delay(200);
+
+	CDC_Printf("What ?\r\n");
+	CDC_Scanf("%s", cmd);
+	cmd[0] = '\0';
+	/* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
+
+
 int Calc_FIR (int inSample) {
 	float inSampleF = (float)inSample;
 	float outdata = 0;
@@ -498,6 +508,14 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+  /* USER CODE END Error_Handler_Debug */
+}
+
+void Warning_Handler(void)
+{
+  /* USER CODE BEGIN Error_Handler_Debug */
+  /* User can add his own implementation to report the HAL error return state */
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
   /* USER CODE END Error_Handler_Debug */
 }
 

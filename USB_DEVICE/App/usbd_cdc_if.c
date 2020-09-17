@@ -21,7 +21,9 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_cdc_if.h"
+#include <string.h>
 #include <stdarg.h>
+#include <stdio.h>
 /* USER CODE BEGIN INCLUDE */
 
 /* USER CODE END INCLUDE */
@@ -90,6 +92,7 @@
 /* It's up to user to redefine and/or remove those define */
 /** Received data over USB are stored in this buffer      */
 uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
+_Bool CDC_RX_DATA_AVAILABLE = 0;
 
 /** Data to send over USB CDC are stored in this buffer   */
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
@@ -264,15 +267,26 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   /* USER CODE BEGIN 6 */
   static uint8_t txLen;
   static uint8_t rxLen;
+  static uint8_t RX_Buf_Temp[APP_RX_DATA_SIZE];
 
   /* Get data from serial com */
   if(USBD_CDC_SetRxBuffer(&hUsbDeviceFS, Buf) != USBD_OK || USBD_CDC_ReceivePacket(&hUsbDeviceFS) != USBD_OK)
   {
 	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
-	  return(USBD_BUSY);;
+	  return(USBD_BUSY);
   }
 
   for(uint8_t i = 0; i < (*Len); i++){
+
+	  /* Avoid buffer overflow */
+	  if(txLen == APP_TX_DATA_SIZE)
+	  {
+		  txLen = 0;
+	  }
+	  if(rxLen == APP_RX_DATA_SIZE)
+	  {
+ 		  rxLen = 0;
+ 	  }
 
 	  /* If Backspace key: clear the last char */
 	  if((UserTxBufferFS[txLen++] = Buf[i]) == '\b'){
@@ -282,18 +296,17 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 			  rxLen--;
 		  }
 	  }
-	  /* Else if Enter key: add a \n to terminal and a \0 to output buffer */
-	  else if(Buf[i] == '\r'){
+	  /* Else if Enter key: add a \n to terminal and extract output buffer */
+	  else if(Buf[i] == '\r' || Buf[i] == '\0'){
 		  UserTxBufferFS[txLen++] = '\n';
-		  UserRxBufferFS[rxLen++] = '\0';
-		  /*
-		   * TODO: extract UserRxBufferFS to main() or whatever through a "thread safe" solution
-		   */
+		  RX_Buf_Temp[rxLen++] = '\0';
+		  memcpy(UserRxBufferFS, RX_Buf_Temp, rxLen+1);
+		  CDC_RX_DATA_AVAILABLE = 1;
 		  rxLen = 0;
 	  }
 	  /* Else only copy data */
 	  else{
-		  UserRxBufferFS[rxLen++] = Buf[i];
+		  RX_Buf_Temp[rxLen++] = Buf[i];
 	  }
   }
 
@@ -303,31 +316,37 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   }
   else
   {
-	  /* Exit warning */
+	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
 	  return(USBD_BUSY);
   }
-  /* Exit success */
   return (USBD_OK);
   /* USER CODE END 6 */
 }
 
-uint8_t CDC_Printf(const char *format, ...)
+void CDC_Printf(const char *format, ...)
 {
-  /* Local variables */
-  va_list arg;
-  uint16_t Len = 1;
-
-  /* Compute the string length to send */
-  while(format[Len] != '\0' && Len <= APP_TX_DATA_SIZE){Len++;}
-
   /* Format the string */
+  va_list arg;
   va_start(arg, format);
   vsprintf((char*)UserTxBufferFS, format, arg);
   va_end(arg);
 
   /* Transmit the buffer through serial communication */
-  return CDC_Transmit_FS(UserTxBufferFS, Len);
+  CDC_Transmit_FS(UserTxBufferFS, strlen((char *)UserTxBufferFS));
+}
 
+void CDC_Scanf(const char *format, ...)
+{
+	/* Wait for Enter key */
+	while(CDC_RX_DATA_AVAILABLE == 0){}
+
+	/* Extract data from string */
+	va_list arg;
+	va_start(arg, format);
+	vsscanf((char*)UserRxBufferFS, format, arg);
+	va_end(arg);
+
+	CDC_RX_DATA_AVAILABLE = 0;
 }
 
 /**
