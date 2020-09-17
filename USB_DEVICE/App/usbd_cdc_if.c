@@ -300,7 +300,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 	  else if(Buf[i] == '\r' || Buf[i] == '\0'){
 		  UserTxBufferFS[txLen++] = '\n';
 		  RX_Buf_Temp[rxLen++] = '\0';
-		  memcpy(UserRxBufferFS, RX_Buf_Temp, rxLen+1);
+		  memcpy(UserRxBufferFS, RX_Buf_Temp, rxLen);
 		  CDC_RX_DATA_WAIT = 1;
 		  rxLen = 0;
 	  }

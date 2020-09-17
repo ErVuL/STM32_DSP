@@ -153,9 +153,9 @@ int main(void)
     /* USER CODE END WHILE */
 	//HAL_Delay(200);
 
-	CDC_Printf("What ?\r\n");
+	CDC_Printf("What ? %s  \r\n", cmd);
 	CDC_Scanf("%s", cmd);
-	cmd[0] = '\0';
+	//cmd[0] = '\0';
 	/* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
