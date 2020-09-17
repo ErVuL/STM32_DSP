@@ -92,7 +92,7 @@
 /* It's up to user to redefine and/or remove those define */
 /** Received data over USB are stored in this buffer      */
 uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
-_Bool CDC_RX_DATA_AVAILABLE = 0;
+_Bool CDC_RX_DATA_WAIT = 0;
 
 /** Data to send over USB CDC are stored in this buffer   */
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
@@ -301,7 +301,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 		  UserTxBufferFS[txLen++] = '\n';
 		  RX_Buf_Temp[rxLen++] = '\0';
 		  memcpy(UserRxBufferFS, RX_Buf_Temp, rxLen+1);
-		  CDC_RX_DATA_AVAILABLE = 1;
+		  CDC_RX_DATA_WAIT = 1;
 		  rxLen = 0;
 	  }
 	  /* Else only copy data */
@@ -338,7 +338,7 @@ void CDC_Printf(const char *format, ...)
 void CDC_Scanf(const char *format, ...)
 {
 	/* Wait for Enter key */
-	while(CDC_RX_DATA_AVAILABLE == 0){}
+	while(CDC_RX_DATA_WAIT == 0){}
 
 	/* Extract data from string */
 	va_list arg;
@@ -346,7 +346,7 @@ void CDC_Scanf(const char *format, ...)
 	vsscanf((char*)UserRxBufferFS, format, arg);
 	va_end(arg);
 
-	CDC_RX_DATA_AVAILABLE = 0;
+	CDC_RX_DATA_WAIT = 0;
 }
 
 /**
