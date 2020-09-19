@@ -92,13 +92,12 @@
 /* It's up to user to redefine and/or remove those define */
 /** Received data over USB are stored in this buffer      */
 uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
-_Bool CDC_RX_DATA_WAIT = 0;
 
 /** Data to send over USB CDC are stored in this buffer   */
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
-
+_Bool CDC_RX_DATA_WAIT = 0;
 /* USER CODE END PRIVATE_VARIABLES */
 
 /**
@@ -265,6 +264,7 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
   static uint8_t txLen;
   static uint8_t rxLen;
   static uint8_t RX_Buf_Temp[APP_RX_DATA_SIZE];
@@ -272,7 +272,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   /* Get data from serial com */
   if(USBD_CDC_SetRxBuffer(&hUsbDeviceFS, Buf) != USBD_OK || USBD_CDC_ReceivePacket(&hUsbDeviceFS) != USBD_OK)
   {
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
+          HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
 	  return(USBD_BUSY);
   }
 
@@ -316,38 +316,14 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   }
   else
   {
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
+          HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
 	  return(USBD_BUSY);
   }
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
   return (USBD_OK);
   /* USER CODE END 6 */
 }
 
-void CDC_Printf(const char *format, ...)
-{
-  /* Format the string */
-  va_list arg;
-  va_start(arg, format);
-  vsprintf((char*)UserTxBufferFS, format, arg);
-  va_end(arg);
-
-  /* Transmit the buffer through serial communication */
-  CDC_Transmit_FS(UserTxBufferFS, strlen((char *)UserTxBufferFS));
-}
-
-void CDC_Scanf(const char *format, ...)
-{
-	/* Wait for Enter key */
-	while(CDC_RX_DATA_WAIT == 0){}
-
-	/* Extract data from string */
-	va_list arg;
-	va_start(arg, format);
-	vsscanf((char*)UserRxBufferFS, format, arg);
-	va_end(arg);
-
-	CDC_RX_DATA_WAIT = 0;
-}
 
 /**
   * @brief  CDC_Transmit_FS
@@ -364,24 +340,27 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 {
 
 	/* USER CODE BEGIN 7 */
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
   USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
   if (hcdc->TxState != 0)
   {
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
-    return USBD_BUSY;
+        HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+	return USBD_BUSY;
   }
 
   USBD_CDC_SetTxBuffer(&hUsbDeviceFS, Buf, Len);
 
   if(USBD_CDC_TransmitPacket(&hUsbDeviceFS) == USBD_OK)
   {
+          HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
 	  return USBD_OK;
   }
   else
   {
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
+          HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
 	  return USBD_BUSY;
   }
+
   /* USER CODE END 7 */
 }
 
@@ -410,6 +389,34 @@ static int8_t CDC_TransmitCplt_FS(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
 
+void CDC_Printf(const char *format, ...)
+{
+  /* Format the string */
+  va_list arg;
+  va_start(arg, format);
+  vsprintf((char*)UserTxBufferFS, format, arg);
+  va_end(arg);
+
+  /* Transmit the buffer through serial communication */
+  CDC_Transmit_FS(UserTxBufferFS, strlen((char *)UserTxBufferFS));
+  HAL_Delay(1);
+}
+
+void CDC_Scanf(const char *format, ...)
+{
+	/* Wait for Enter key */
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
+	while(!CDC_RX_DATA_WAIT && USB_CDC_SERIAL_CONNECTED){}
+
+	/* Extract data from string */
+	va_list arg;
+	va_start(arg, format);
+	vsscanf((char*)UserRxBufferFS, format, arg);
+	va_end(arg);
+
+	CDC_RX_DATA_WAIT = 0;
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+}
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
 
 /**
