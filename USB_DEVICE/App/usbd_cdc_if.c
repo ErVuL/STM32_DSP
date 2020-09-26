@@ -278,8 +278,8 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 	static uint8_t RX_Buf_Temp[APP_RX_DATA_SIZE];
 
 	/* Get data from serial com */
-	if (USBD_CDC_SetRxBuffer(&hUsbDeviceFS, Buf) != USBD_OK
-			|| USBD_CDC_ReceivePacket(&hUsbDeviceFS) != USBD_OK)
+	USBD_CDC_SetRxBuffer(&hUsbDeviceFS, Buf);
+	if (USBD_CDC_ReceivePacket(&hUsbDeviceFS) != USBD_OK)
 	{
 		return (USBD_BUSY);
 	}
