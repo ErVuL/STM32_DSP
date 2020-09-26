@@ -429,9 +429,7 @@ void CDC_Scanf(const char *format, ...)
 		va_end(arg);
 		CDC_RX_DATA_INWAIT = 0;
 	}
-
 }
-
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
 
 /**
