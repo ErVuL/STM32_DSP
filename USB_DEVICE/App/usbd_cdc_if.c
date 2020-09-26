@@ -1,31 +1,29 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : usbd_cdc_if.c
-  * @version        : v1.0_Cube
-  * @brief          : Usb device for Virtual Com Port.
-  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2020 STMicroelectronics.
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under Ultimate Liberty license
-  * SLA0044, the "License"; You may not use this file except in compliance with
-  * the License. You may obtain a copy of the License at:
-  *                             www.st.com/SLA0044
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : usbd_cdc_if.c
+ * @version        : v1.0_Cube
+ * @brief          : Usb device for Virtual Com Port.
+ ******************************************************************************
+ * @attention
+ *
+ * <h2><center>&copy; Copyright (c) 2020 STMicroelectronics.
+ * All rights reserved.</center></h2>
+ *
+ * This software component is licensed by ST under Ultimate Liberty license
+ * SLA0044, the "License"; You may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at:
+ *                             www.st.com/SLA0044
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_cdc_if.h"
-#include <string.h>
-#include <stdarg.h>
-#include <stdio.h>
-/* USER CODE BEGIN INCLUDE */
 
+/* USER CODE BEGIN INCLUDE */
+#include <stdarg.h>
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -34,7 +32,7 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-
+uint8_t HOST_PORT_COM_OPEN = 0;
 /* USER CODE END PV */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -97,7 +95,7 @@ uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
-_Bool CDC_RX_DATA_WAIT = 0;
+_Bool CDC_RX_DATA_INWAIT = 0;
 /* USER CODE END PRIVATE_VARIABLES */
 
 /**
@@ -155,10 +153,10 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
 static int8_t CDC_Init_FS(void)
 {
   /* USER CODE BEGIN 3 */
-  /* Set Application Buffers */
-  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, UserTxBufferFS, 0);
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS);
-  return (USBD_OK);
+	/* Set Application Buffers */
+	USBD_CDC_SetTxBuffer(&hUsbDeviceFS, UserTxBufferFS, 0);
+	USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS);
+	return (USBD_OK);
   /* USER CODE END 3 */
 }
 
@@ -169,7 +167,7 @@ static int8_t CDC_Init_FS(void)
 static int8_t CDC_DeInit_FS(void)
 {
   /* USER CODE BEGIN 4 */
-  return (USBD_OK);
+	return (USBD_OK);
   /* USER CODE END 4 */
 }
 
@@ -183,66 +181,77 @@ static int8_t CDC_DeInit_FS(void)
 static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 {
   /* USER CODE BEGIN 5 */
-  switch(cmd)
-  {
-    case CDC_SEND_ENCAPSULATED_COMMAND:
+	switch (cmd)
+	{
+	case CDC_SEND_ENCAPSULATED_COMMAND:
 
-    break;
+		break;
 
-    case CDC_GET_ENCAPSULATED_RESPONSE:
+	case CDC_GET_ENCAPSULATED_RESPONSE:
 
-    break;
+		break;
 
-    case CDC_SET_COMM_FEATURE:
+	case CDC_SET_COMM_FEATURE:
 
-    break;
+		break;
 
-    case CDC_GET_COMM_FEATURE:
+	case CDC_GET_COMM_FEATURE:
 
-    break;
+		break;
 
-    case CDC_CLEAR_COMM_FEATURE:
+	case CDC_CLEAR_COMM_FEATURE:
 
-    break;
+		break;
 
-  /*******************************************************************************/
-  /* Line Coding Structure                                                       */
-  /*-----------------------------------------------------------------------------*/
-  /* Offset | Field       | Size | Value  | Description                          */
-  /* 0      | dwDTERate   |   4  | Number |Data terminal rate, in bits per second*/
-  /* 4      | bCharFormat |   1  | Number | Stop bits                            */
-  /*                                        0 - 1 Stop bit                       */
-  /*                                        1 - 1.5 Stop bits                    */
-  /*                                        2 - 2 Stop bits                      */
-  /* 5      | bParityType |  1   | Number | Parity                               */
-  /*                                        0 - None                             */
-  /*                                        1 - Odd                              */
-  /*                                        2 - Even                             */
-  /*                                        3 - Mark                             */
-  /*                                        4 - Space                            */
-  /* 6      | bDataBits  |   1   | Number Data bits (5, 6, 7, 8 or 16).          */
-  /*******************************************************************************/
-    case CDC_SET_LINE_CODING:
+		/*******************************************************************************/
+		/* Line Coding Structure                                                       */
+		/*-----------------------------------------------------------------------------*/
+		/* Offset | Field       | Size | Value  | Description                          */
+		/* 0      | dwDTERate   |   4  | Number |Data terminal rate, in bits per second*/
+		/* 4      | bCharFormat |   1  | Number | Stop bits                            */
+		/*                                        0 - 1 Stop bit                       */
+		/*                                        1 - 1.5 Stop bits                    */
+		/*                                        2 - 2 Stop bits                      */
+		/* 5      | bParityType |  1   | Number | Parity                               */
+		/*                                        0 - None                             */
+		/*                                        1 - Odd                              */
+		/*                                        2 - Even                             */
+		/*                                        3 - Mark                             */
+		/*                                        4 - Space                            */
+		/* 6      | bDataBits  |   1   | Number Data bits (5, 6, 7, 8 or 16).          */
+		/*******************************************************************************/
+	case CDC_SET_LINE_CODING:
 
-    break;
+		break;
 
-    case CDC_GET_LINE_CODING:
+	case CDC_GET_LINE_CODING:
 
-    break;
+		break;
 
-    case CDC_SET_CONTROL_LINE_STATE:
+	case CDC_SET_CONTROL_LINE_STATE:
+	{
+		USBD_SetupReqTypedef *req = (USBD_SetupReqTypedef*) pbuf;
+		if ((req->wValue & 0x0001) != 0)
+		{
+			HOST_PORT_COM_OPEN = 1;
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
+		}
+		else
+		{
+			HOST_PORT_COM_OPEN = 0;
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+		}
+		break;
+	}
+	case CDC_SEND_BREAK:
 
-    break;
+		break;
 
-    case CDC_SEND_BREAK:
+	default:
+		break;
+	}
 
-    break;
-
-  default:
-    break;
-  }
-
-  return (USBD_OK);
+	return (USBD_OK);
   /* USER CODE END 5 */
 }
 
@@ -264,66 +273,68 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
-  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
-  static uint8_t txLen;
-  static uint8_t rxLen;
-  static uint8_t RX_Buf_Temp[APP_RX_DATA_SIZE];
+	static uint8_t txLen;
+	static uint8_t rxLen;
+	static uint8_t RX_Buf_Temp[APP_RX_DATA_SIZE];
 
-  /* Get data from serial com */
-  if(USBD_CDC_SetRxBuffer(&hUsbDeviceFS, Buf) != USBD_OK || USBD_CDC_ReceivePacket(&hUsbDeviceFS) != USBD_OK)
-  {
-          HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
-	  return(USBD_BUSY);
-  }
+	/* Get data from serial com */
+	if (USBD_CDC_SetRxBuffer(&hUsbDeviceFS, Buf) != USBD_OK
+			|| USBD_CDC_ReceivePacket(&hUsbDeviceFS) != USBD_OK)
+	{
+		return (USBD_BUSY);
+	}
 
-  for(uint8_t i = 0; i < (*Len); i++){
+	for (uint8_t i = 0; i < (*Len); i++)
+	{
 
-	  /* Avoid buffer overflow */
-	  if(txLen == APP_TX_DATA_SIZE)
-	  {
-		  txLen = 0;
-	  }
-	  if(rxLen == APP_RX_DATA_SIZE)
-	  {
- 		  rxLen = 0;
- 	  }
+		/* Avoid buffer overflow */
+		if (txLen == APP_TX_DATA_SIZE)
+		{
+			txLen = 0;
+		}
+		if (rxLen == APP_RX_DATA_SIZE)
+		{
+			rxLen = 0;
+		}
 
-	  /* If Backspace key: clear the last char */
-	  if((UserTxBufferFS[txLen++] = Buf[i]) == '\b'){
-		  UserTxBufferFS[txLen++] = ' ';
-		  UserTxBufferFS[txLen++] = '\b';
-		  if(rxLen){
-			  rxLen--;
-		  }
-	  }
-	  /* Else if Enter key: add a \n to terminal and extract output buffer */
-	  else if(Buf[i] == '\r' || Buf[i] == '\0'){
-		  UserTxBufferFS[txLen++] = '\n';
-		  RX_Buf_Temp[rxLen++] = '\0';
-		  memcpy(UserRxBufferFS, RX_Buf_Temp, rxLen);
-		  CDC_RX_DATA_WAIT = 1;
-		  rxLen = 0;
-	  }
-	  /* Else only copy data */
-	  else{
-		  RX_Buf_Temp[rxLen++] = Buf[i];
-	  }
-  }
+		/* If Backspace key: clear the last char */
+		if ((UserTxBufferFS[txLen++] = Buf[i]) == '\b')
+		{
+			UserTxBufferFS[txLen++] = ' ';
+			UserTxBufferFS[txLen++] = '\b';
+			if (rxLen)
+			{
+				rxLen--;
+			}
+		}
+		/* Else if Enter key: add a \n to terminal and extract output buffer */
+		else if (Buf[i] == '\r' || Buf[i] == '\0')
+		{
+			UserTxBufferFS[txLen++] = '\n';
+			RX_Buf_Temp[rxLen++] = '\0';
+			memcpy(UserRxBufferFS, RX_Buf_Temp, rxLen);
+			CDC_RX_DATA_INWAIT = 1;
+			rxLen = 0;
+		}
+		/* Else only copy data */
+		else
+		{
+			RX_Buf_Temp[rxLen++] = Buf[i];
+		}
+	}
 
-  /* Send result to terminal */
-  if(CDC_Transmit_FS(UserTxBufferFS, txLen) == USBD_OK){
-	  txLen = 0;
-  }
-  else
-  {
-          HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
-	  return(USBD_BUSY);
-  }
-  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
-  return (USBD_OK);
+	/* Send result to terminal */
+	if (CDC_Transmit_FS(UserTxBufferFS, txLen) == USBD_OK)
+	{
+		txLen = 0;
+	}
+	else
+	{
+		return (USBD_BUSY);
+	}
+	return (USBD_OK);
   /* USER CODE END 6 */
 }
-
 
 /**
   * @brief  CDC_Transmit_FS
@@ -338,30 +349,27 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   */
 uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 {
+  uint8_t result = USBD_OK;
+  /* USER CODE BEGIN 7 */
+	USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*) hUsbDeviceFS.pClassData;
+	if (hcdc->TxState != 0)
+	{
+		return USBD_BUSY;
+	}
 
-	/* USER CODE BEGIN 7 */
-  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
-  USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
-  if (hcdc->TxState != 0)
-  {
-        HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
-	return USBD_BUSY;
-  }
+	USBD_CDC_SetTxBuffer(&hUsbDeviceFS, Buf, Len);
 
-  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, Buf, Len);
-
-  if(USBD_CDC_TransmitPacket(&hUsbDeviceFS) == USBD_OK)
-  {
-          HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
-	  return USBD_OK;
-  }
-  else
-  {
-          HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
-	  return USBD_BUSY;
-  }
+	if (USBD_CDC_TransmitPacket(&hUsbDeviceFS) == USBD_OK)
+	{
+		return USBD_OK;
+	}
+	else
+	{
+		return USBD_BUSY;
+	}
 
   /* USER CODE END 7 */
+  return result;
 }
 
 /**
@@ -380,9 +388,9 @@ static int8_t CDC_TransmitCplt_FS(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
 {
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 13 */
-  UNUSED(Buf);
-  UNUSED(Len);
-  UNUSED(epnum);
+	UNUSED(Buf);
+	UNUSED(Len);
+	UNUSED(epnum);
   /* USER CODE END 13 */
   return result;
 }
@@ -391,32 +399,39 @@ static int8_t CDC_TransmitCplt_FS(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
 
 void CDC_Printf(const char *format, ...)
 {
-  /* Format the string */
-  va_list arg;
-  va_start(arg, format);
-  vsprintf((char*)UserTxBufferFS, format, arg);
-  va_end(arg);
+	if (HOST_PORT_COM_OPEN)
+	{
+		/* Format the string */
+		va_list arg;
+		va_start(arg, format);
+		vsprintf((char*) UserTxBufferFS, format, arg);
+		va_end(arg);
 
-  /* Transmit the buffer through serial communication */
-  CDC_Transmit_FS(UserTxBufferFS, strlen((char *)UserTxBufferFS));
-  HAL_Delay(1);
+		/* Transmit the buffer through serial communication */
+		CDC_Transmit_FS(UserTxBufferFS, strlen((char*) UserTxBufferFS));
+		HAL_Delay(1);
+	}
 }
 
 void CDC_Scanf(const char *format, ...)
 {
 	/* Wait for Enter key */
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
-	while(!CDC_RX_DATA_WAIT && USB_CDC_SERIAL_CONNECTED){}
+	while (!CDC_RX_DATA_INWAIT && HOST_PORT_COM_OPEN)
+	{
+	}
 
-	/* Extract data from string */
-	va_list arg;
-	va_start(arg, format);
-	vsscanf((char*)UserRxBufferFS, format, arg);
-	va_end(arg);
+	if (CDC_RX_DATA_INWAIT)
+	{
+		/* Extract data from string */
+		va_list arg;
+		va_start(arg, format);
+		vsscanf((char*) UserRxBufferFS, format, arg);
+		va_end(arg);
+		CDC_RX_DATA_INWAIT = 0;
+	}
 
-	CDC_RX_DATA_WAIT = 0;
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
 }
+
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
 
 /**

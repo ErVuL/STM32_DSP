@@ -6,9 +6,9 @@ stm32f4xx_hal_i2s_ex.c:815:13:HAL_I2SEx_TxRxHalfCpltCallback	16	static
 stm32f4xx_hal_i2s_ex.c:830:13:HAL_I2SEx_TxRxCpltCallback	16	static
 stm32f4xx_hal_i2s_ex.c:858:13:I2SEx_TxRxDMAHalfCplt	24	static
 stm32f4xx_hal_i2s_ex.c:876:13:I2SEx_TxRxDMACplt	24	static
-stm32f4xx_hal_i2s_ex.c:946:13:I2SEx_TxRxDMAError	24	static
-stm32f4xx_hal_i2s_ex.c:974:13:I2SEx_TxISR_I2S	16	static
-stm32f4xx_hal_i2s_ex.c:1003:13:I2SEx_TxISR_I2SExt	16	static
-stm32f4xx_hal_i2s_ex.c:1032:13:I2SEx_RxISR_I2S	16	static
-stm32f4xx_hal_i2s_ex.c:1061:13:I2SEx_RxISR_I2SExt	16	static
-stm32f4xx_hal_i2s_ex.c:1094:26:I2SEx_FullDuplexWaitFlagStateUntilTimeout	32	static
+stm32f4xx_hal_i2s_ex.c:947:13:I2SEx_TxRxDMAError	24	static
+stm32f4xx_hal_i2s_ex.c:975:13:I2SEx_TxISR_I2S	16	static
+stm32f4xx_hal_i2s_ex.c:1004:13:I2SEx_TxISR_I2SExt	16	static
+stm32f4xx_hal_i2s_ex.c:1033:13:I2SEx_RxISR_I2S	16	static
+stm32f4xx_hal_i2s_ex.c:1062:13:I2SEx_RxISR_I2SExt	16	static
+stm32f4xx_hal_i2s_ex.c:1095:26:I2SEx_FullDuplexWaitFlagStateUntilTimeout	32	static

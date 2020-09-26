@@ -125,7 +125,7 @@ void Error_Handler(void);
 #define MEMS_INT2_Pin GPIO_PIN_1
 #define MEMS_INT2_GPIO_Port GPIOE
 /* USER CODE BEGIN Private defines */
-#define USB_CDC_SERIAL_CONNECTED ((hUsbDeviceFS.dev_state != USBD_STATE_CONFIGURED) || (hUsbDeviceFS.ep0_state == USBD_EP0_STATUS_IN))
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
