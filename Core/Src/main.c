@@ -45,8 +45,8 @@ DMA_HandleTypeDef hdma_i2s2_ext_rx;
 DMA_HandleTypeDef hdma_spi2_tx;
 
 /* USER CODE BEGIN PV */
-uint16_t rxBuf[I2S2_BUFFER_LENGTH];
-uint16_t txBuf[I2S2_BUFFER_LENGTH];
+uint16_t I2S2_rxBuffer[I2S2_BUFFER_LENGTH];
+uint16_t I2S2_txBuffer[I2S2_BUFFER_LENGTH];
 extern volatile uint8_t HOST_PORT_COM_OPEN;
 /* USER CODE END PV */
 
@@ -91,7 +91,7 @@ int main(void)
 	MX_I2S2_Init();
 	MX_USB_DEVICE_Init();
 	/* USER CODE BEGIN 2 */
-	HAL_I2SEx_TransmitReceive_DMA(&hi2s2, txBuf, rxBuf, I2S2_BUFFER_LENGTH/2);
+	HAL_I2SEx_TransmitReceive_DMA(&hi2s2, I2S2_txBuffer, I2S2_rxBuffer, I2S2_BUFFER_LENGTH/2);
 	HAL_Delay(1500);
 	CDC_Printf("\r\n ================");
 	CDC_Printf("\r\n *** DSP V0.0 ***");
@@ -340,22 +340,22 @@ void HAL_I2SEx_TxRxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 {
 	int32_t L_Channel[I2S2_BUFFER_LENGTH/8];
 	int32_t R_Channel[I2S2_BUFFER_LENGTH/8];
-	PmodI2S2_AudioRead_24b(rxBuf, L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
+	PmodI2S2_AudioRead_24b(I2S2_rxBuffer, L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
 	/*
 	 * PROCESS HERE
 	 */
-	PmodI2S2_AudioWrite_24b(txBuf, L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
+	PmodI2S2_AudioWrite_24b(I2S2_txBuffer, L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
 }
 
 void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef *hi2s)
 {
 	int32_t L_Channel[I2S2_BUFFER_LENGTH/8];
 	int32_t R_Channel[I2S2_BUFFER_LENGTH/8];
-	PmodI2S2_AudioRead_24b(&rxBuf[I2S2_BUFFER_LENGTH/2], L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
+	PmodI2S2_AudioRead_24b(&I2S2_rxBuffer[I2S2_BUFFER_LENGTH/2], L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
 	/*
 	 * PROCESS HERE
 	 */
-	PmodI2S2_AudioWrite_24b(&txBuf[I2S2_BUFFER_LENGTH/2], L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
+	PmodI2S2_AudioWrite_24b(&I2S2_txBuffer[I2S2_BUFFER_LENGTH/2], L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
 }
 
 void PmodI2S2_AudioRead_24b(uint16_t * rxBuf, int32_t * L_Channel, int32_t * R_Channel, uint32_t Len)

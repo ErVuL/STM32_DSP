@@ -39,11 +39,11 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING
  17 .debug_line   0000f2c9  00000000  00000000  0005ec67  2**0
                   CONTENTS, READONLY, DEBUGGING
- 18 .debug_str    000c656f  00000000  00000000  0006df30  2**0
+ 18 .debug_str    000c658b  00000000  00000000  0006df30  2**0
                   CONTENTS, READONLY, DEBUGGING
- 19 .comment      0000007b  00000000  00000000  0013449f  2**0
+ 19 .comment      0000007b  00000000  00000000  001344bb  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  00003f90  00000000  00000000  0013451c  2**2
+ 20 .debug_frame  00003f90  00000000  00000000  00134538  2**2
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
@@ -460,7 +460,7 @@ int main(void)
 	MX_USB_DEVICE_Init();
  800059a:	f007 f91d 	bl	80077d8 <MX_USB_DEVICE_Init>
 	/* USER CODE BEGIN 2 */
-	HAL_I2SEx_TransmitReceive_DMA(&hi2s2, txBuf, rxBuf, I2S2_BUFFER_LENGTH/2);
+	HAL_I2SEx_TransmitReceive_DMA(&hi2s2, I2S2_txBuffer, I2S2_rxBuffer, I2S2_BUFFER_LENGTH/2);
  800059e:	f44f 5380 	mov.w	r3, #4096	; 0x1000
  80005a2:	4a1d      	ldr	r2, [pc, #116]	; (8000618 <main+0x98>)
  80005a4:	491d      	ldr	r1, [pc, #116]	; (800061c <main+0x9c>)
@@ -1180,7 +1180,7 @@ void HAL_I2SEx_TxRxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
  8000a40:	6018      	str	r0, [r3, #0]
 	int32_t L_Channel[I2S2_BUFFER_LENGTH/8];
 	int32_t R_Channel[I2S2_BUFFER_LENGTH/8];
-	PmodI2S2_AudioRead_24b(rxBuf, L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
+	PmodI2S2_AudioRead_24b(I2S2_rxBuffer, L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
  8000a42:	f107 0208 	add.w	r2, r7, #8
  8000a46:	f507 5180 	add.w	r1, r7, #4096	; 0x1000
  8000a4a:	f101 0108 	add.w	r1, r1, #8
@@ -1190,7 +1190,7 @@ void HAL_I2SEx_TxRxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 	/*
 	 * PROCESS HERE
 	 */
-	PmodI2S2_AudioWrite_24b(txBuf, L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
+	PmodI2S2_AudioWrite_24b(I2S2_txBuffer, L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
  8000a58:	f107 0208 	add.w	r2, r7, #8
  8000a5c:	f507 5180 	add.w	r1, r7, #4096	; 0x1000
  8000a60:	f101 0108 	add.w	r1, r1, #8
@@ -1220,7 +1220,7 @@ void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef *hi2s)
  8000a94:	6018      	str	r0, [r3, #0]
 	int32_t L_Channel[I2S2_BUFFER_LENGTH/8];
 	int32_t R_Channel[I2S2_BUFFER_LENGTH/8];
-	PmodI2S2_AudioRead_24b(&rxBuf[I2S2_BUFFER_LENGTH/2], L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
+	PmodI2S2_AudioRead_24b(&I2S2_rxBuffer[I2S2_BUFFER_LENGTH/2], L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
  8000a96:	f107 0208 	add.w	r2, r7, #8
  8000a9a:	f507 5180 	add.w	r1, r7, #4096	; 0x1000
  8000a9e:	f101 0108 	add.w	r1, r1, #8
@@ -1230,7 +1230,7 @@ void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef *hi2s)
 	/*
 	 * PROCESS HERE
 	 */
-	PmodI2S2_AudioWrite_24b(&txBuf[I2S2_BUFFER_LENGTH/2], L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
+	PmodI2S2_AudioWrite_24b(&I2S2_txBuffer[I2S2_BUFFER_LENGTH/2], L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
  8000aac:	f107 0208 	add.w	r2, r7, #8
  8000ab0:	f507 5180 	add.w	r1, r7, #4096	; 0x1000
  8000ab4:	f101 0108 	add.w	r1, r1, #8
