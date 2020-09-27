@@ -45,8 +45,8 @@ DMA_HandleTypeDef hdma_i2s2_ext_rx;
 DMA_HandleTypeDef hdma_spi2_tx;
 
 /* USER CODE BEGIN PV */
-uint16_t rxBuf[8];
-uint16_t txBuf[8];
+uint16_t rxBuf[I2S2_BUFFER_LENGTH];
+uint16_t txBuf[I2S2_BUFFER_LENGTH];
 extern volatile uint8_t HOST_PORT_COM_OPEN;
 /* USER CODE END PV */
 
@@ -91,7 +91,7 @@ int main(void)
 	MX_I2S2_Init();
 	MX_USB_DEVICE_Init();
 	/* USER CODE BEGIN 2 */
-	HAL_I2SEx_TransmitReceive_DMA(&hi2s2, txBuf, rxBuf, 4);
+	HAL_I2SEx_TransmitReceive_DMA(&hi2s2, txBuf, rxBuf, I2S2_BUFFER_LENGTH/2);
 	HAL_Delay(1500);
 	CDC_Printf("\r\n ================");
 	CDC_Printf("\r\n *** DSP V0.0 ***");
@@ -115,9 +115,7 @@ int main(void)
 
 		/* USER CODE BEGIN 3 */
 		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
-
 		CDC_Scanf("%s", cmd);
-
 		HAL_Delay(500);
 		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
 		HAL_Delay(500);
@@ -340,32 +338,44 @@ static void MX_GPIO_Init(void)
 
 void HAL_I2SEx_TxRxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-
-	//restore signed 24 bit sample from 16-bit buffers
-	int lSample = (int) (rxBuf[0] << 16) | rxBuf[1];
-	int rSample = (int) (rxBuf[2] << 16) | rxBuf[3];
-
-	//restore to buffer
-	txBuf[0] = (lSample >> 16) & 0xFFFF;
-	txBuf[1] = lSample & 0xFFFF;
-	txBuf[2] = (rSample >> 16) & 0xFFFF;
-	txBuf[3] = rSample & 0xFFFF;
+	int32_t L_Channel[I2S2_BUFFER_LENGTH/8];
+	int32_t R_Channel[I2S2_BUFFER_LENGTH/8];
+	PmodI2S2_AudioRead_24b(rxBuf, L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
+	/*
+	 * PROCESS HERE
+	 */
+	PmodI2S2_AudioWrite_24b(txBuf, L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
 }
 
 void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-
-	//restore signed 24 bit sample from 16-bit buffers
-	int lSample = (int) (rxBuf[4] << 16) | rxBuf[5];
-	int rSample = (int) (rxBuf[6] << 16) | rxBuf[7];
-
-	//restore to buffer
-	txBuf[4] = (lSample >> 16) & 0xFFFF;
-	txBuf[5] = lSample & 0xFFFF;
-	txBuf[6] = (rSample >> 16) & 0xFFFF;
-	txBuf[7] = rSample & 0xFFFF;
+	int32_t L_Channel[I2S2_BUFFER_LENGTH/8];
+	int32_t R_Channel[I2S2_BUFFER_LENGTH/8];
+	PmodI2S2_AudioRead_24b(&rxBuf[I2S2_BUFFER_LENGTH/2], L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
+	/*
+	 * PROCESS HERE
+	 */
+	PmodI2S2_AudioWrite_24b(&txBuf[I2S2_BUFFER_LENGTH/2], L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
 }
 
+void PmodI2S2_AudioRead_24b(uint16_t * rxBuf, int32_t * L_Channel, int32_t * R_Channel, uint32_t Len)
+{
+	for (uint32_t i = 0; i+3 < Len; i+=4)
+	{
+		L_Channel[i/4] = (int32_t) (rxBuf[i]   << 16) | rxBuf[i+1];
+		R_Channel[i/4] = (int32_t) (rxBuf[i+2] << 16) | rxBuf[i+3];
+	}
+}
+void PmodI2S2_AudioWrite_24b(uint16_t * txBuf, int32_t * L_Channel, int32_t * R_Channel, uint32_t Len)
+{
+	for (uint32_t i = 0; i+3 < Len; i+=4)
+	{
+		txBuf[i]   = (L_Channel[i/4] >> 16) & 0xFFFF;
+	    txBuf[i+1] =  L_Channel[i/4] & 0xFFFF;
+	    txBuf[i+2] = (R_Channel[i/4] >> 16) & 0xFFFF;
+	    txBuf[i+3] =  R_Channel[i/4] & 0xFFFF;
+	}
+}
 /* USER CODE END 4 */
 
 /**
