@@ -430,6 +430,18 @@ void CDC_Scanf(const char *format, ...)
 		CDC_RX_DATA_INWAIT = 0;
 	}
 }
+
+void CDC_SpinWheels(char * str)
+{
+	if (HOST_PORT_COM_OPEN)
+	{
+		static uint8_t i;
+		char w[5] = "-\\|/";
+		CDC_Printf("\r[ %c%c ] %s ", w[i], w[i], str);
+		i++;
+		i = i%4;
+	}
+}
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
 
 /**

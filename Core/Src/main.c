@@ -93,32 +93,29 @@ int main(void)
 	/* USER CODE BEGIN 2 */
 	HAL_I2SEx_TransmitReceive_DMA(&hi2s2, I2S2_txBuffer, I2S2_rxBuffer, I2S2_BUFFER_LENGTH/2);
 	HAL_Delay(1500);
-	CDC_Printf("\r\n ================");
+	CDC_Printf("\r\n\n ================");
 	CDC_Printf("\r\n *** DSP V0.0 ***");
 	CDC_Printf("\r\n ================\r\n\n");
 	if(!HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_14))
-	{
-		CDC_Printf("[ OK ] Initialization\r\n");
-	}
-	else
-	{
-		CDC_Printf("[ ER ] Initialization\r\n");
-	}
+	{CDC_Printf("[ OK ] Hardware initialization\r\n");}
+	else{CDC_Printf("[ ER ] Hardware initialization\r\n");}
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
-	char cmd[64];
+
+	//char cmd[64];
+
 	while (1)
 	{
 		/* USER CODE END WHILE */
-
 		/* USER CODE BEGIN 3 */
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
-		CDC_Scanf("%s", cmd);
-		HAL_Delay(500);
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
-		HAL_Delay(500);
+
+		//CDC_Scanf("%s", cmd);
+		HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);
+		CDC_SpinWheels("Processing");
+		HAL_Delay(250);
+
 	}
 	/* USER CODE END 3 */
 }
@@ -376,6 +373,7 @@ void PmodI2S2_AudioWrite_24b(uint16_t * txBuf, int32_t * L_Channel, int32_t * R_
 	    txBuf[i+3] =  R_Channel[i/4] & 0xFFFF;
 	}
 }
+
 /* USER CODE END 4 */
 
 /**

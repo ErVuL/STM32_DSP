@@ -6,3 +6,4 @@ usbd_cdc_if.c:350:9:CDC_Transmit_FS	24	static
 usbd_cdc_if.c:387:15:CDC_TransmitCplt_FS	32	static
 usbd_cdc_if.c:400:6:CDC_Printf	16	static
 usbd_cdc_if.c:416:6:CDC_Scanf	16	static
+usbd_cdc_if.c:434:6:CDC_SpinWheels	24	static

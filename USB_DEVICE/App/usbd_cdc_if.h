@@ -111,6 +111,7 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
 void CDC_Printf(const char *format, ...);
 void CDC_Scanf(const char *format, ...);
+void CDC_SpinWheels(char * str);
 /* USER CODE END EXPORTED_FUNCTIONS */
 
 /**
