@@ -6,7 +6,7 @@ usbd_cdc_if.c:361:9:CDC_Transmit_FS	24	static
 usbd_cdc_if.c:388:15:CDC_TransmitCplt_FS	32	static
 usbd_cdc_if.c:401:6:CDC_Printf	16	static
 usbd_cdc_if.c:417:6:CDC_Scanf	16	static
-usbd_cdc_if.c:432:6:CDC_Spin	152	static
-usbd_cdc_if.c:449:6:CDC_Clear	8	static
-usbd_cdc_if.c:458:6:CDC_SetPos	16	static
-usbd_cdc_if.c:463:6:CDC_Move	16	static
+usbd_cdc_if.c:434:6:CDC_Spin	152	static
+usbd_cdc_if.c:451:6:CDC_Clear	8	static
+usbd_cdc_if.c:460:6:CDC_SetPos	16	static
+usbd_cdc_if.c:465:6:CDC_Move	16	static

@@ -418,7 +418,9 @@ void CDC_Scanf(const char *format, ...)
 {
 	while (!CDC_RX_DATA_PENDING && HOST_PORT_COM_OPEN)
 	{
+		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
 	}
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
 	if (CDC_RX_DATA_PENDING)
 	{
 		va_list arg;
