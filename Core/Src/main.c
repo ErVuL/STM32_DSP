@@ -20,7 +20,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usb_device.h"
-
+#include <string.h>
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -48,6 +48,7 @@ DMA_HandleTypeDef hdma_spi2_tx;
 uint16_t I2S2_rxBuffer[I2S2_BUFFER_LENGTH];
 uint16_t I2S2_txBuffer[I2S2_BUFFER_LENGTH];
 extern volatile uint8_t HOST_PORT_COM_OPEN;
+extern volatile _Bool CDC_RX_DATA_PENDING;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -93,9 +94,10 @@ int main(void)
 	/* USER CODE BEGIN 2 */
 	HAL_I2SEx_TransmitReceive_DMA(&hi2s2, I2S2_txBuffer, I2S2_rxBuffer, I2S2_BUFFER_LENGTH/2);
 	HAL_Delay(1500);
-	CDC_Printf("\r\n\n ================");
-	CDC_Printf("\r\n *** DSP V0.0 ***");
-	CDC_Printf("\r\n ================\r\n\n");
+	CDC_Clear();
+	CDC_Printf("\r\n       ================");
+	CDC_Printf("\r\n       *** DSP V0.0 ***");
+	CDC_Printf("\r\n       ================\r\n\n");
 	if(!HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_14))
 	{CDC_Printf("[ OK ] Hardware initialization\r\n");}
 	else{CDC_Printf("[ ER ] Hardware initialization\r\n");}
@@ -103,8 +105,16 @@ int main(void)
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
+	char cmd[APP_RX_DATA_SIZE];
+	cmd[0] = '\0';
 
-	//char cmd[64];
+	CDC_Printf("[    ] Press ENTER");
+	CDC_Scanf("%s", cmd);
+	if (cmd[0] == '\0')
+	{
+		CDC_Move(0,-1);
+		CDC_Printf("\r[ OK ]\r\n");
+	}
 
 	while (1)
 	{
@@ -113,8 +123,32 @@ int main(void)
 
 		//CDC_Scanf("%s", cmd);
 		HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);
-		CDC_SpinWheels("Processing");
+		CDC_Spin("Processing (%d ms)", HAL_GetTick());
 		HAL_Delay(250);
+		///////////////////////////////////////////////////////////////////////////
+	/*	uint32_t prim;
+	    // Read PRIMASK register, check interrupt status before you disable them
+	    // Returns 0 if they are enabled, or non-zero if disabled
+	    prim = __get_PRIMASK();
+	    __disable_irq();
+	 */   ////////////////////////////////////////////////////////////////////////////
+		if (CDC_RX_DATA_PENDING)
+		{
+			CDC_Scanf("%s", cmd);
+
+			if (!strcmp(cmd, "clear"))
+			{
+				CDC_Clear();
+			}
+
+			cmd[0] = '\0';
+		}
+	    ////////////////////////////////////////////////////////////////////////////
+	/*    if (!prim) {
+	        __enable_irq();
+	    }
+	*/    ////////////////////////////////////////////////////////////////////////////
+
 
 	}
 	/* USER CODE END 3 */

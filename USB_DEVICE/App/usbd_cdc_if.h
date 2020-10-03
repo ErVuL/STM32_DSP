@@ -53,7 +53,6 @@
 /* It's up to user to redefine and/or remove those define */
 #define APP_RX_DATA_SIZE  128
 #define APP_TX_DATA_SIZE  128
-
 /* USER CODE END EXPORTED_DEFINES */
 
 /**
@@ -111,7 +110,10 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
 void CDC_Printf(const char *format, ...);
 void CDC_Scanf(const char *format, ...);
-void CDC_SpinWheels(char * str);
+void CDC_Spin(const char *format, ...);
+void CDC_Clear(void);
+void CDC_SetPos(uint16_t x, uint16_t y);
+void CDC_Move(int16_t x, int16_t y);
 /* USER CODE END EXPORTED_FUNCTIONS */
 
 /**
