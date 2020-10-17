@@ -174,8 +174,7 @@ static int8_t CDC_DeInit_FS(void)
 }
 
 /**
-  * @brief  Manage t		//HAL_Delay(1);
-  * he CDC class requests
+  * @brief  Manage the CDC class requests
   * @param  cmd: Command code
   * @param  pbuf: Buffer containing command data (request parameters)
   * @param  length: Number of data to be sent (in bytes)
@@ -337,12 +336,12 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 		}
 	}
 
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
 	/* Send result to terminal */
 	if ((result = CDC_Transmit_FS(UserTxBufferFS, txLen)) == USBD_OK)
 	{
 		txLen = 0;
 	}
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
 	return result;
   /* USER CODE END 6 */
 }
@@ -362,15 +361,18 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 {
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 7 */
+    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
 	USBD_CDC_HandleTypeDef * hcdc = (USBD_CDC_HandleTypeDef*) hUsbDeviceFS.pClassData;
 	if (hcdc->TxState != 0U)
 	{
+		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
 		return USBD_BUSY;
 	}
 	USBD_CDC_SetTxBuffer(&hUsbDeviceFS, Buf, Len);
 	result = USBD_CDC_TransmitPacket(&hUsbDeviceFS);
-	/* USER CODE END 7 */
-	return result;
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
+  /* USER CODE END 7 */
+  return result;
 }
 
 /**
@@ -408,9 +410,7 @@ void CDC_Printf(const char *format, ...)
 		va_end(arg);
 		while(CDC_Transmit_FS(UserTxBufferFS, strlen((char*) UserTxBufferFS)) == USBD_BUSY && HOST_PORT_COM_OPEN)
 		{
-			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
 		}
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
 	}
 }
 
@@ -452,9 +452,7 @@ void CDC_Clear(void)
 {
 	while(CDC_Transmit_FS((uint8_t *)"\033[2J", 4) == USBD_BUSY && HOST_PORT_COM_OPEN)
 	{
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
 	}
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
 }
 
 void CDC_SetPos(uint16_t x, uint16_t y)

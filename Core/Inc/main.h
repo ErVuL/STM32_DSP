@@ -126,7 +126,7 @@ void PmodI2S2_AudioWrite_24b(uint16_t * txBuf, int32_t * L_Channel, int32_t * R_
 #define MEMS_INT2_Pin GPIO_PIN_1
 #define MEMS_INT2_GPIO_Port GPIOE
 /* USER CODE BEGIN Private defines */
-#define I2S2_BUFFER_LENGTH 8192
+#define I2S_BUFFER_LENGTH 4096
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

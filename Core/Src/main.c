@@ -19,8 +19,9 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "pdm2pcm.h"
 #include "usb_device.h"
-#include <string.h>
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -40,13 +41,19 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+CRC_HandleTypeDef hcrc;
+
 I2S_HandleTypeDef hi2s2;
+I2S_HandleTypeDef hi2s3;
 DMA_HandleTypeDef hdma_i2s2_ext_rx;
 DMA_HandleTypeDef hdma_spi2_tx;
+DMA_HandleTypeDef hdma_spi3_rx;
 
 /* USER CODE BEGIN PV */
-uint16_t I2S2_rxBuffer[I2S2_BUFFER_LENGTH];
-uint16_t I2S2_txBuffer[I2S2_BUFFER_LENGTH];
+uint16_t I2S2_rxBuffer[I2S_BUFFER_LENGTH];
+uint16_t I2S2_txBuffer[I2S_BUFFER_LENGTH];
+uint16_t I2S3_rxBuffer[I2S_BUFFER_LENGTH];
+uint16_t PDM_rxBuffer[I2S_BUFFER_LENGTH];
 extern volatile uint8_t HOST_PORT_COM_OPEN;
 extern volatile _Bool CDC_RX_DATA_PENDING;
 /* USER CODE END PV */
@@ -56,6 +63,8 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_I2S2_Init(void);
+static void MX_CRC_Init(void);
+static void MX_I2S3_Init(void);
 /* USER CODE BEGIN PFP */
 /* USER CODE END PFP */
 
@@ -91,16 +100,23 @@ int main(void)
 	MX_DMA_Init();
 	MX_I2S2_Init();
 	MX_USB_DEVICE_Init();
+	MX_CRC_Init();
+	MX_I2S3_Init();
+	MX_PDM2PCM_Init();
 	/* USER CODE BEGIN 2 */
-	HAL_I2SEx_TransmitReceive_DMA(&hi2s2, I2S2_txBuffer, I2S2_rxBuffer, I2S2_BUFFER_LENGTH/2);
 	HAL_Delay(1500);
 	CDC_Clear();
 	CDC_Printf("\r\n       ================");
 	CDC_Printf("\r\n       *** DSP V0.0 ***");
 	CDC_Printf("\r\n       ================\r\n\n");
-	if(!HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_14))
-	{CDC_Printf("[ OK ] Hardware initialization\r\n");}
-	else{CDC_Printf("[ ER ] Hardware initialization\r\n");}
+	if (!HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_14))
+	{
+		CDC_Printf("[ OK ] Hardware initialization\r\n");
+	}
+	else
+	{
+		CDC_Printf("[ ER ] Hardware initialization\r\n");
+	}
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -108,30 +124,30 @@ int main(void)
 	char cmd[APP_RX_DATA_SIZE];
 	cmd[0] = '\0';
 
-	CDC_Printf("[    ] Press ENTER");
+	CDC_Printf("[    ] Press ENTER to start\r\n");
 	CDC_Scanf("%s", cmd);
-	if (cmd[0] == '\0')
-	{
-		CDC_Move(0,-1);
-		CDC_Printf("\r[ OK ]\r\n");
-	}
+	CDC_Move(0, -2);
+	CDC_Printf("\r[ OK ]\r\n");
+	HAL_I2SEx_TransmitReceive_DMA(&hi2s2, I2S2_txBuffer, I2S2_rxBuffer, I2S_BUFFER_LENGTH / 2);
+	HAL_I2S_Receive_DMA(&hi2s3, PDM_rxBuffer, I2S_BUFFER_LENGTH / 2);
 
 	while (1)
 	{
 		/* USER CODE END WHILE */
+
 		/* USER CODE BEGIN 3 */
 
 		//CDC_Scanf("%s", cmd);
 		HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);
-		CDC_Spin("Processing (%d ms)", HAL_GetTick());
+		CDC_Spin("Processing");
 		HAL_Delay(250);
-		///////////////////////////////////////////////////////////////////////////
-	/*	uint32_t prim;
-	    // Read PRIMASK register, check interrupt status before you disable them
-	    // Returns 0 if they are enabled, or non-zero if disabled
-	    prim = __get_PRIMASK();
-	    __disable_irq();
-	 */   ////////////////////////////////////////////////////////////////////////////
+		/*
+		 uint32_t prim;
+		 // Read PRIMASK register, check interrupt status before you disable them
+		 // Returns 0 if they are enabled, or non-zero if disabled
+		 prim = __get_PRIMASK();
+		 __disable_irq();
+		 */
 		if (CDC_RX_DATA_PENDING)
 		{
 			CDC_Scanf("%s", cmd);
@@ -143,13 +159,11 @@ int main(void)
 
 			cmd[0] = '\0';
 		}
-	    ////////////////////////////////////////////////////////////////////////////
-	/*    if (!prim) {
-	        __enable_irq();
-	    }
-	*/    ////////////////////////////////////////////////////////////////////////////
-
-
+		/*
+		 if (!prim) {
+		 __enable_irq();
+		 }
+		 */
 	}
 	/* USER CODE END 3 */
 }
@@ -209,6 +223,33 @@ void SystemClock_Config(void)
 }
 
 /**
+ * @brief CRC Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_CRC_Init(void)
+{
+
+	/* USER CODE BEGIN CRC_Init 0 */
+
+	/* USER CODE END CRC_Init 0 */
+
+	/* USER CODE BEGIN CRC_Init 1 */
+
+	/* USER CODE END CRC_Init 1 */
+	hcrc.Instance = CRC;
+	if (HAL_CRC_Init(&hcrc) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	__HAL_CRC_DR_RESET(&hcrc);
+	/* USER CODE BEGIN CRC_Init 2 */
+
+	/* USER CODE END CRC_Init 2 */
+
+}
+
+/**
  * @brief I2S2 Initialization Function
  * @param None
  * @retval None
@@ -240,6 +281,40 @@ static void MX_I2S2_Init(void)
 }
 
 /**
+ * @brief I2S3 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_I2S3_Init(void)
+{
+
+	/* USER CODE BEGIN I2S3_Init 0 */
+
+	/* USER CODE END I2S3_Init 0 */
+
+	/* USER CODE BEGIN I2S3_Init 1 */
+
+	/* USER CODE END I2S3_Init 1 */
+	hi2s3.Instance = SPI3;
+	hi2s3.Init.Mode = I2S_MODE_MASTER_RX;
+	hi2s3.Init.Standard = I2S_STANDARD_MSB;
+	hi2s3.Init.DataFormat = I2S_DATAFORMAT_24B;
+	hi2s3.Init.MCLKOutput = I2S_MCLKOUTPUT_ENABLE;
+	hi2s3.Init.AudioFreq = I2S_AUDIOFREQ_96K;
+	hi2s3.Init.CPOL = I2S_CPOL_LOW;
+	hi2s3.Init.ClockSource = I2S_CLOCK_PLL;
+	hi2s3.Init.FullDuplexMode = I2S_FULLDUPLEXMODE_DISABLE;
+	if (HAL_I2S_Init(&hi2s3) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	/* USER CODE BEGIN I2S3_Init 2 */
+
+	/* USER CODE END I2S3_Init 2 */
+
+}
+
+/**
  * Enable DMA controller clock
  */
 static void MX_DMA_Init(void)
@@ -249,6 +324,9 @@ static void MX_DMA_Init(void)
 	__HAL_RCC_DMA1_CLK_ENABLE();
 
 	/* DMA interrupt init */
+	/* DMA1_Stream0_IRQn interrupt configuration */
+	HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
 	/* DMA1_Stream3_IRQn interrupt configuration */
 	HAL_NVIC_SetPriority(DMA1_Stream3_IRQn, 0, 0);
 	HAL_NVIC_EnableIRQ(DMA1_Stream3_IRQn);
@@ -305,14 +383,6 @@ static void MX_GPIO_Init(void)
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
-	/*Configure GPIO pin : I2S3_WS_Pin */
-	GPIO_InitStruct.Pin = I2S3_WS_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	GPIO_InitStruct.Alternate = GPIO_AF6_SPI3;
-	HAL_GPIO_Init(I2S3_WS_GPIO_Port, &GPIO_InitStruct);
-
 	/*Configure GPIO pins : SPI1_SCK_Pin SPI1_MISO_Pin SPI1_MOSI_Pin */
 	GPIO_InitStruct.Pin = SPI1_SCK_Pin | SPI1_MISO_Pin | SPI1_MOSI_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
@@ -334,14 +404,6 @@ static void MX_GPIO_Init(void)
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-
-	/*Configure GPIO pins : I2S3_MCK_Pin I2S3_SCK_Pin I2S3_SD_Pin */
-	GPIO_InitStruct.Pin = I2S3_MCK_Pin | I2S3_SCK_Pin | I2S3_SD_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	GPIO_InitStruct.Alternate = GPIO_AF6_SPI3;
-	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
 	/*Configure GPIO pin : OTG_FS_OverCurrent_Pin */
 	GPIO_InitStruct.Pin = OTG_FS_OverCurrent_Pin;
@@ -369,43 +431,56 @@ static void MX_GPIO_Init(void)
 
 void HAL_I2SEx_TxRxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-	int32_t L_Channel[I2S2_BUFFER_LENGTH/8];
-	int32_t R_Channel[I2S2_BUFFER_LENGTH/8];
-	PmodI2S2_AudioRead_24b(I2S2_rxBuffer, L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
+	int32_t L_Channel[I2S_BUFFER_LENGTH / 8];
+	int32_t R_Channel[I2S_BUFFER_LENGTH / 8];
+	PmodI2S2_AudioRead_24b(I2S2_rxBuffer, L_Channel, R_Channel, I2S_BUFFER_LENGTH / 2);
 	/*
 	 * PROCESS HERE
 	 */
-	PmodI2S2_AudioWrite_24b(I2S2_txBuffer, L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
+	PmodI2S2_AudioWrite_24b(I2S2_txBuffer, L_Channel, R_Channel, I2S_BUFFER_LENGTH / 2);
 }
 
 void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-	int32_t L_Channel[I2S2_BUFFER_LENGTH/8];
-	int32_t R_Channel[I2S2_BUFFER_LENGTH/8];
-	PmodI2S2_AudioRead_24b(&I2S2_rxBuffer[I2S2_BUFFER_LENGTH/2], L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
+	int32_t L_Channel[I2S_BUFFER_LENGTH / 8];
+	int32_t R_Channel[I2S_BUFFER_LENGTH / 8];
+	PmodI2S2_AudioRead_24b(&I2S2_rxBuffer[I2S_BUFFER_LENGTH / 2], L_Channel, R_Channel,
+						   I2S_BUFFER_LENGTH / 2);
 	/*
 	 * PROCESS HERE
 	 */
-	PmodI2S2_AudioWrite_24b(&I2S2_txBuffer[I2S2_BUFFER_LENGTH/2], L_Channel, R_Channel, I2S2_BUFFER_LENGTH/2);
+	PmodI2S2_AudioWrite_24b(&I2S2_txBuffer[I2S_BUFFER_LENGTH / 2], L_Channel, R_Channel,
+							I2S_BUFFER_LENGTH / 2);
 }
 
-void PmodI2S2_AudioRead_24b(uint16_t * rxBuf, int32_t * L_Channel, int32_t * R_Channel, uint32_t Len)
+void PmodI2S2_AudioRead_24b(uint16_t *rxBuf, int32_t *L_Channel, int32_t *R_Channel, uint32_t Len)
 {
-	for (uint32_t i = 0; i+3 < Len; i+=4)
+	for (uint32_t i = 0; i + 3 < Len; i += 4)
 	{
-		L_Channel[i/4] = (int32_t) (rxBuf[i]   << 16) | rxBuf[i+1];
-		R_Channel[i/4] = (int32_t) (rxBuf[i+2] << 16) | rxBuf[i+3];
+		L_Channel[i / 4] = (int32_t) (rxBuf[i] << 16) | rxBuf[i + 1];
+		R_Channel[i / 4] = (int32_t) (rxBuf[i + 2] << 16) | rxBuf[i + 3];
 	}
 }
-void PmodI2S2_AudioWrite_24b(uint16_t * txBuf, int32_t * L_Channel, int32_t * R_Channel, uint32_t Len)
+void PmodI2S2_AudioWrite_24b(uint16_t *txBuf, int32_t *L_Channel, int32_t *R_Channel, uint32_t Len)
 {
-	for (uint32_t i = 0; i+3 < Len; i+=4)
+	for (uint32_t i = 0; i + 3 < Len; i += 4)
 	{
-		txBuf[i]   = (L_Channel[i/4] >> 16) & 0xFFFF;
-	    txBuf[i+1] =  L_Channel[i/4] & 0xFFFF;
-	    txBuf[i+2] = (R_Channel[i/4] >> 16) & 0xFFFF;
-	    txBuf[i+3] =  R_Channel[i/4] & 0xFFFF;
+		txBuf[i] = (L_Channel[i / 4] >> 16) & 0xFFFF;
+		txBuf[i + 1] = L_Channel[i / 4] & 0xFFFF;
+		txBuf[i + 2] = (R_Channel[i / 4] >> 16) & 0xFFFF;
+		txBuf[i + 3] = R_Channel[i / 4] & 0xFFFF;
 	}
+}
+
+void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
+{
+	PDM_Filter(&PDM_rxBuffer[0], &I2S3_rxBuffer[0], &PDM1_filter_handler);
+}
+
+void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s)
+{
+	PDM_Filter(&PDM_rxBuffer[I2S_BUFFER_LENGTH / 2], &I2S3_rxBuffer[I2S_BUFFER_LENGTH / 2],
+			   &PDM1_filter_handler);
 }
 
 /* USER CODE END 4 */
