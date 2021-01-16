@@ -54,8 +54,8 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-void PmodI2S2_AudioRead_24b(uint16_t * rxBuf, int32_t * L_Channel, int32_t * R_Channel, uint32_t Len);
-void PmodI2S2_AudioWrite_24b(uint16_t * txBuf, int32_t * L_Channel, int32_t * R_Channel, uint32_t Len);
+void PmodI2S2_AudioRead_24b(uint16_t * rxBuf, int32_t * L_Channel, int32_t * R_Channel);
+void PmodI2S2_AudioWrite_24b(uint16_t * txBuf, int32_t * L_Channel, int32_t * R_Channel);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
@@ -126,7 +126,7 @@ void PmodI2S2_AudioWrite_24b(uint16_t * txBuf, int32_t * L_Channel, int32_t * R_
 #define MEMS_INT2_Pin GPIO_PIN_1
 #define MEMS_INT2_GPIO_Port GPIOE
 /* USER CODE BEGIN Private defines */
-#define I2S_BUFFER_LENGTH 4096
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

@@ -24,7 +24,6 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
 #include "usbd_cdc_if.h"
 /* USER CODE END Includes */
 
@@ -34,6 +33,10 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define I2S2_BUFFER_LENGTH 	4096
+#define I2S3_BUFFER_LENGTH 	(I2S2_BUFFER_LENGTH/4)
+#define CHANNELS_LENGTH    	(I2S2_BUFFER_LENGTH/4)
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -50,12 +53,24 @@ DMA_HandleTypeDef hdma_spi2_tx;
 DMA_HandleTypeDef hdma_spi3_rx;
 
 /* USER CODE BEGIN PV */
-uint16_t I2S2_rxBuffer[I2S_BUFFER_LENGTH];
-uint16_t I2S2_txBuffer[I2S_BUFFER_LENGTH];
-uint16_t I2S3_rxBuffer[I2S_BUFFER_LENGTH];
-uint16_t PDM_rxBuffer[I2S_BUFFER_LENGTH];
-extern volatile uint8_t HOST_PORT_COM_OPEN;
-extern volatile _Bool CDC_RX_DATA_PENDING;
+extern volatile _Bool HOST_PORT_COM_OPEN;  		// Port COM fully connected
+extern volatile _Bool CDC_RX_DATA_PENDING; 		// Data available from port COM
+uint8_t I2S2_state;								// I2S2 CallBack state
+uint8_t I2S3_state;								// I2S3 CallBack state
+enum {Busy, HalfCplt, Cplt};					// I2S CallBack states definition
+uint16_t I2S2_rxBuffer[I2S2_BUFFER_LENGTH]; 	// I2S2 rxBuffer for PmodI2S2
+uint16_t I2S2_txBuffer[I2S2_BUFFER_LENGTH]; 	// I2S2 txBuffer for PmodI2S2
+uint16_t I2S3_rxBuffer[I2S3_BUFFER_LENGTH]; 	// I2S3 rxBuffer for PDM Mic
+uint16_t *pI2S2_txBuffer = I2S2_txBuffer;		// |
+uint16_t *pI2S2_rxBuffer = I2S2_rxBuffer;		// | automatic ptr for read and write functions
+uint16_t *pI2S3_rxBuffer = I2S3_rxBuffer;		// |
+int32_t L_Channel[CHANNELS_LENGTH]; 			// Left channel
+int32_t R_Channel[CHANNELS_LENGTH]; 			// Right Channel
+int32_t M_Channel[CHANNELS_LENGTH]; 			// Mono Channel
+int32_t *pL_Channel = L_Channel;				// |
+int32_t *pR_Channel = R_Channel;				// | automatic ptr for read and write functions
+int32_t *pM_Channel = M_Channel;				// |
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -128,8 +143,8 @@ int main(void)
 	CDC_Scanf("%s", cmd);
 	CDC_Move(0, -2);
 	CDC_Printf("\r[ OK ]\r\n");
-	HAL_I2SEx_TransmitReceive_DMA(&hi2s2, I2S2_txBuffer, I2S2_rxBuffer, I2S_BUFFER_LENGTH / 2);
-	HAL_I2S_Receive_DMA(&hi2s3, PDM_rxBuffer, I2S_BUFFER_LENGTH / 2);
+	HAL_I2SEx_TransmitReceive_DMA(&hi2s2, I2S2_txBuffer, I2S2_rxBuffer, I2S2_BUFFER_LENGTH / 2);
+	HAL_I2S_Receive_DMA(&hi2s3, I2S3_rxBuffer, I2S3_BUFFER_LENGTH / 2);
 
 	while (1)
 	{
@@ -137,33 +152,30 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-		//CDC_Scanf("%s", cmd);
+		/* Toggle Led and printf */
 		HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);
 		CDC_Spin("Processing");
-		HAL_Delay(250);
-		/*
-		 uint32_t prim;
-		 // Read PRIMASK register, check interrupt status before you disable them
-		 // Returns 0 if they are enabled, or non-zero if disabled
-		 prim = __get_PRIMASK();
-		 __disable_irq();
-		 */
+
+		/* Read and Write audio data */
+		PmodI2S2_AudioRead_24b(pI2S2_rxBuffer, pL_Channel, pR_Channel);
+		PmodI2S2_AudioWrite_24b(pI2S2_txBuffer, pL_Channel, pR_Channel);
+
+		/* Command from Port COM available */
 		if (CDC_RX_DATA_PENDING)
 		{
+			/* Read command */
 			CDC_Scanf("%s", cmd);
 
+
+			/* Execute command */
 			if (!strcmp(cmd, "clear"))
 			{
 				CDC_Clear();
 			}
 
+
 			cmd[0] = '\0';
 		}
-		/*
-		 if (!prim) {
-		 __enable_irq();
-		 }
-		 */
 	}
   /* USER CODE END 3 */
 }
@@ -429,56 +441,70 @@ static void MX_GPIO_Init(void)
 
 void HAL_I2SEx_TxRxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-	int32_t L_Channel[I2S_BUFFER_LENGTH / 8];
-	int32_t R_Channel[I2S_BUFFER_LENGTH / 8];
-	PmodI2S2_AudioRead_24b(I2S2_rxBuffer, L_Channel, R_Channel, I2S_BUFFER_LENGTH / 2);
-	/*
-	 * PROCESS HERE
-	 */
-	PmodI2S2_AudioWrite_24b(I2S2_txBuffer, L_Channel, R_Channel, I2S_BUFFER_LENGTH / 2);
+	pL_Channel = &L_Channel[0];
+	pR_Channel = &R_Channel[0];
+	pI2S2_txBuffer = &I2S2_txBuffer[0];
+	pI2S2_rxBuffer = &I2S2_rxBuffer[0];
+	I2S2_state = HalfCplt;
 }
 
 void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-	int32_t L_Channel[I2S_BUFFER_LENGTH / 8];
-	int32_t R_Channel[I2S_BUFFER_LENGTH / 8];
-	PmodI2S2_AudioRead_24b(&I2S2_rxBuffer[I2S_BUFFER_LENGTH / 2], L_Channel, R_Channel,
-						   I2S_BUFFER_LENGTH / 2);
-	/*
-	 * PROCESS HERE
-	 */
-	PmodI2S2_AudioWrite_24b(&I2S2_txBuffer[I2S_BUFFER_LENGTH / 2], L_Channel, R_Channel,
-							I2S_BUFFER_LENGTH / 2);
-}
-
-void PmodI2S2_AudioRead_24b(uint16_t *rxBuf, int32_t *L_Channel, int32_t *R_Channel, uint32_t Len)
-{
-	for (uint32_t i = 0; i + 3 < Len; i += 4)
-	{
-		L_Channel[i / 4] = (int32_t) (rxBuf[i] << 16) | rxBuf[i + 1];
-		R_Channel[i / 4] = (int32_t) (rxBuf[i + 2] << 16) | rxBuf[i + 3];
-	}
-}
-void PmodI2S2_AudioWrite_24b(uint16_t *txBuf, int32_t *L_Channel, int32_t *R_Channel, uint32_t Len)
-{
-	for (uint32_t i = 0; i + 3 < Len; i += 4)
-	{
-		txBuf[i] = (L_Channel[i / 4] >> 16) & 0xFFFF;
-		txBuf[i + 1] = L_Channel[i / 4] & 0xFFFF;
-		txBuf[i + 2] = (R_Channel[i / 4] >> 16) & 0xFFFF;
-		txBuf[i + 3] = R_Channel[i / 4] & 0xFFFF;
-	}
+	pL_Channel = &L_Channel[CHANNELS_LENGTH / 2];
+	pR_Channel = &R_Channel[CHANNELS_LENGTH / 2];
+	pI2S2_txBuffer = &I2S2_txBuffer[I2S2_BUFFER_LENGTH/2];
+	pI2S2_rxBuffer = &I2S2_rxBuffer[I2S2_BUFFER_LENGTH/2];
+	I2S2_state = Cplt;
 }
 
 void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-	PDM_Filter(&PDM_rxBuffer[0], &I2S3_rxBuffer[0], &PDM1_filter_handler);
+	/*
+	PDM_Filter(I2S3_rxBuffer, M_Channel, &PDM1_filter_handler);
+	for(uint32_t i = 0; i < CHANNELS_LENGTH/2; i++)
+	{
+		M_Channel[i] = (int32_t) (I2S3_rxBuffer[i] << 8);
+	}
+	pM_Channel =  &M_Channel[0];
+	I2S3_state = HalfCplt;
+	*/
 }
 
 void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-	PDM_Filter(&PDM_rxBuffer[I2S_BUFFER_LENGTH / 2], &I2S3_rxBuffer[I2S_BUFFER_LENGTH / 2],
-			   &PDM1_filter_handler);
+	/*PDM_Filter(&I2S3_rxBuffer[I2S3_BUFFER_LENGTH / 2], &M_Channel[CHANNELS_LENGTH / 2], &PDM1_filter_handler);
+	for(uint32_t i = 0; i < CHANNELS_LENGTH/2; i++)
+	{
+		M_Channel[i + CHANNELS_LENGTH / 2] = (int32_t) (I2S3_rxBuffer[i + I2S3_BUFFER_LENGTH / 2] << 8);
+	}
+	pM_Channel =  &M_Channel[CHANNELS_LENGTH / 2];
+	I2S3_state = Cplt;
+	*/
+	//PmodI2S2_AudioWrite_24b(&I2S2_txBuffer[I2S2_BUFFER_LENGTH / 2], &M_Channel[CHANNELS_LENGTH / 2], &M_Channel[CHANNELS_LENGTH / 2], I2S2_BUFFER_LENGTH / 2);
+}
+
+void PmodI2S2_AudioRead_24b(uint16_t *rxBuf, int32_t *L_Channel, int32_t *R_Channel)
+{
+	while(I2S2_state == Busy){};
+	I2S2_state = Busy;
+	for (uint32_t i = 0; i + 3 < I2S2_BUFFER_LENGTH / 2; i += 4)
+	{
+		L_Channel[i / 4] = (int32_t) ( (rxBuf[i]     << 16) | rxBuf[i + 1] );
+		R_Channel[i / 4] = (int32_t) ( (rxBuf[i + 2] << 16) | rxBuf[i + 3] );
+	}
+}
+
+void PmodI2S2_AudioWrite_24b(uint16_t *txBuf, int32_t *L_Channel, int32_t *R_Channel)
+{
+	while(I2S2_state == Busy){};
+	I2S2_state = Busy;
+	for (uint32_t i = 0; i + 3 < I2S2_BUFFER_LENGTH / 2; i += 4)
+	{
+		txBuf[i]     = (L_Channel[i / 4] >> 16) & 0xFFFF;
+		txBuf[i + 1] =  L_Channel[i / 4] & 0xFFFF;
+		txBuf[i + 2] = (R_Channel[i / 4] >> 16) & 0xFFFF;
+		txBuf[i + 3] =  R_Channel[i / 4] & 0xFFFF;
+	}
 }
 
 /* USER CODE END 4 */

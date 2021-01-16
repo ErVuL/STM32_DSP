@@ -34,7 +34,7 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-uint8_t HOST_PORT_COM_OPEN = 0;
+_Bool HOST_PORT_COM_OPEN = 0;
 /* USER CODE END PV */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -433,11 +433,12 @@ void CDC_Scanf(const char *format, ...)
 
 void CDC_Spin(const char *format, ...)
 {
-	if (HOST_PORT_COM_OPEN)
+	static uint8_t i;
+	char w[5] = "-\\|/";
+	char str[APP_TX_DATA_SIZE];
+	static uint32_t clk;
+	if (HOST_PORT_COM_OPEN && HAL_GetTick()-clk > 500)
 	{
-		static uint8_t i;
-		char w[5] = "-\\|/";
-		char str[APP_TX_DATA_SIZE];
 		va_list arg;
 		va_start(arg, format);
 		vsprintf(str, format, arg);
@@ -445,6 +446,7 @@ void CDC_Spin(const char *format, ...)
 		CDC_Printf("\r[ %c%c ] %s ", w[i], w[i], str);
 		i++;
 		i = i%4;
+		clk = HAL_GetTick();
 	}
 }
 
