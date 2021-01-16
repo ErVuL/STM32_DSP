@@ -54,8 +54,9 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-void PmodI2S2_AudioRead_24b(uint16_t * rxBuf, int32_t * L_Channel, int32_t * R_Channel);
-void PmodI2S2_AudioWrite_24b(uint16_t * txBuf, int32_t * L_Channel, int32_t * R_Channel);
+void PmodI2S2_AudioRead_24b(int32_t * L_Channel, int32_t * R_Channel);
+void PmodI2S2_AudioWrite_24b(int32_t * L_Channel, int32_t * R_Channel);
+void MP45DT02_AudioRead_24b(int32_t *M_Channel);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

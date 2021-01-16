@@ -33,10 +33,11 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define I2S2_BUFFER_LENGTH 	4096
-#define I2S3_BUFFER_LENGTH 	(I2S2_BUFFER_LENGTH/4)
-#define CHANNELS_LENGTH    	(I2S2_BUFFER_LENGTH/4)
-
+#define I2S2_BUFFER_LENGTH 	8192
+#define I2S3_BUFFER_LENGTH 	(I2S2_BUFFER_LENGTH/8)
+#define CHANNEL_LENGTH    	(I2S2_BUFFER_LENGTH/8) // sample
+#define OVERLAP				256   // sample
+#define FREQUENCY_SAMPLING	93500 // Hz
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -50,27 +51,20 @@ I2S_HandleTypeDef hi2s2;
 I2S_HandleTypeDef hi2s3;
 DMA_HandleTypeDef hdma_i2s2_ext_rx;
 DMA_HandleTypeDef hdma_spi2_tx;
-DMA_HandleTypeDef hdma_spi3_rx;
 
 /* USER CODE BEGIN PV */
 extern volatile _Bool HOST_PORT_COM_OPEN;  		// Port COM fully connected
 extern volatile _Bool CDC_RX_DATA_PENDING; 		// Data available from port COM
-uint8_t I2S2_state;								// I2S2 CallBack state
-uint8_t I2S3_state;								// I2S3 CallBack state
-enum {Busy, HalfCplt, Cplt};					// I2S CallBack states definition
+uint8_t I2S2_rxState;							// I2S2 rx CallBack state
+uint8_t I2S2_txState;							// I2S2 tx CallBack state
+uint8_t I2S3_rxState;							// I2S3 rx CallBack state
+enum I2S_state {Busy, HalfCplt, Cplt};			// I2S CallBack states definition
 uint16_t I2S2_rxBuffer[I2S2_BUFFER_LENGTH]; 	// I2S2 rxBuffer for PmodI2S2
 uint16_t I2S2_txBuffer[I2S2_BUFFER_LENGTH]; 	// I2S2 txBuffer for PmodI2S2
 uint16_t I2S3_rxBuffer[I2S3_BUFFER_LENGTH]; 	// I2S3 rxBuffer for PDM Mic
 uint16_t *pI2S2_txBuffer = I2S2_txBuffer;		// |
 uint16_t *pI2S2_rxBuffer = I2S2_rxBuffer;		// | automatic ptr for read and write functions
 uint16_t *pI2S3_rxBuffer = I2S3_rxBuffer;		// |
-int32_t L_Channel[CHANNELS_LENGTH]; 			// Left channel
-int32_t R_Channel[CHANNELS_LENGTH]; 			// Right Channel
-int32_t M_Channel[CHANNELS_LENGTH]; 			// Mono Channel
-int32_t *pL_Channel = L_Channel;				// |
-int32_t *pR_Channel = R_Channel;				// | automatic ptr for read and write functions
-int32_t *pM_Channel = M_Channel;				// |
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -94,6 +88,9 @@ static void MX_I2S3_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+	int32_t L_Channel[CHANNEL_LENGTH]; 			// Left channel
+	int32_t R_Channel[CHANNEL_LENGTH]; 			// Right Channel
+	int32_t M_Channel[CHANNEL_LENGTH]; 			// Mono Channel
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -119,6 +116,7 @@ int main(void)
   MX_I2S3_Init();
   MX_PDM2PCM_Init();
   /* USER CODE BEGIN 2 */
+	char cmd[APP_RX_DATA_SIZE];
 	HAL_Delay(1500);
 	CDC_Clear();
 	CDC_Printf("\r\n       ================");
@@ -132,20 +130,12 @@ int main(void)
 	{
 		CDC_Printf("[ ER ] Hardware initialization\r\n");
 	}
+	HAL_I2SEx_TransmitReceive_DMA(&hi2s2, I2S2_txBuffer, I2S2_rxBuffer, I2S2_BUFFER_LENGTH / 2);
+	HAL_I2S_Receive_DMA(&hi2s3, I2S3_rxBuffer, I2S3_BUFFER_LENGTH);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-	char cmd[APP_RX_DATA_SIZE];
-	cmd[0] = '\0';
-
-	CDC_Printf("[    ] Press ENTER to start\r\n");
-	CDC_Scanf("%s", cmd);
-	CDC_Move(0, -2);
-	CDC_Printf("\r[ OK ]\r\n");
-	HAL_I2SEx_TransmitReceive_DMA(&hi2s2, I2S2_txBuffer, I2S2_rxBuffer, I2S2_BUFFER_LENGTH / 2);
-	HAL_I2S_Receive_DMA(&hi2s3, I2S3_rxBuffer, I2S3_BUFFER_LENGTH / 2);
-
 	while (1)
 	{
     /* USER CODE END WHILE */
@@ -156,25 +146,30 @@ int main(void)
 		HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);
 		CDC_Spin("Processing");
 
-		/* Read and Write audio data */
-		PmodI2S2_AudioRead_24b(pI2S2_rxBuffer, pL_Channel, pR_Channel);
-		PmodI2S2_AudioWrite_24b(pI2S2_txBuffer, pL_Channel, pR_Channel);
+		/* Read audio data */
+		//MP45DT02_AudioRead_24b(M_Channel);
+		PmodI2S2_AudioRead_24b(L_Channel, R_Channel);
+
+		/* Process */
+
+
+
+
+		/* Write audio data */
+		PmodI2S2_AudioWrite_24b(L_Channel, R_Channel);
 
 		/* Command from Port COM available */
 		if (CDC_RX_DATA_PENDING)
 		{
 			/* Read command */
 			CDC_Scanf("%s", cmd);
-
+			CDC_RX_DATA_PENDING = 0;
 
 			/* Execute command */
 			if (!strcmp(cmd, "clear"))
 			{
 				CDC_Clear();
 			}
-
-
-			cmd[0] = '\0';
 		}
 	}
   /* USER CODE END 3 */
@@ -307,7 +302,7 @@ static void MX_I2S3_Init(void)
   hi2s3.Instance = SPI3;
   hi2s3.Init.Mode = I2S_MODE_MASTER_RX;
   hi2s3.Init.Standard = I2S_STANDARD_MSB;
-  hi2s3.Init.DataFormat = I2S_DATAFORMAT_24B;
+  hi2s3.Init.DataFormat = I2S_DATAFORMAT_16B_EXTENDED;
   hi2s3.Init.MCLKOutput = I2S_MCLKOUTPUT_ENABLE;
   hi2s3.Init.AudioFreq = I2S_AUDIOFREQ_96K;
   hi2s3.Init.CPOL = I2S_CPOL_LOW;
@@ -333,9 +328,6 @@ static void MX_DMA_Init(void)
   __HAL_RCC_DMA1_CLK_ENABLE();
 
   /* DMA interrupt init */
-  /* DMA1_Stream0_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
   /* DMA1_Stream3_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream3_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream3_IRQn);
@@ -441,69 +433,66 @@ static void MX_GPIO_Init(void)
 
 void HAL_I2SEx_TxRxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-	pL_Channel = &L_Channel[0];
-	pR_Channel = &R_Channel[0];
 	pI2S2_txBuffer = &I2S2_txBuffer[0];
 	pI2S2_rxBuffer = &I2S2_rxBuffer[0];
-	I2S2_state = HalfCplt;
+	I2S2_rxState = HalfCplt;
+	I2S2_txState = HalfCplt;
 }
 
 void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-	pL_Channel = &L_Channel[CHANNELS_LENGTH / 2];
-	pR_Channel = &R_Channel[CHANNELS_LENGTH / 2];
 	pI2S2_txBuffer = &I2S2_txBuffer[I2S2_BUFFER_LENGTH/2];
 	pI2S2_rxBuffer = &I2S2_rxBuffer[I2S2_BUFFER_LENGTH/2];
-	I2S2_state = Cplt;
+	I2S2_rxState = Cplt;
+	I2S2_txState = Cplt;
 }
 
 void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-	/*
-	PDM_Filter(I2S3_rxBuffer, M_Channel, &PDM1_filter_handler);
-	for(uint32_t i = 0; i < CHANNELS_LENGTH/2; i++)
-	{
-		M_Channel[i] = (int32_t) (I2S3_rxBuffer[i] << 8);
-	}
-	pM_Channel =  &M_Channel[0];
-	I2S3_state = HalfCplt;
-	*/
+	pI2S3_rxBuffer = &I2S3_rxBuffer[0];
+	I2S3_rxState = HalfCplt;
+	CDC_Printf("There ! \r\n");
 }
 
 void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-	/*PDM_Filter(&I2S3_rxBuffer[I2S3_BUFFER_LENGTH / 2], &M_Channel[CHANNELS_LENGTH / 2], &PDM1_filter_handler);
-	for(uint32_t i = 0; i < CHANNELS_LENGTH/2; i++)
-	{
-		M_Channel[i + CHANNELS_LENGTH / 2] = (int32_t) (I2S3_rxBuffer[i + I2S3_BUFFER_LENGTH / 2] << 8);
-	}
-	pM_Channel =  &M_Channel[CHANNELS_LENGTH / 2];
-	I2S3_state = Cplt;
-	*/
-	//PmodI2S2_AudioWrite_24b(&I2S2_txBuffer[I2S2_BUFFER_LENGTH / 2], &M_Channel[CHANNELS_LENGTH / 2], &M_Channel[CHANNELS_LENGTH / 2], I2S2_BUFFER_LENGTH / 2);
+	pI2S3_rxBuffer = &I2S3_rxBuffer[I2S3_BUFFER_LENGTH/2];
+	I2S3_rxState = Cplt;
 }
 
-void PmodI2S2_AudioRead_24b(uint16_t *rxBuf, int32_t *L_Channel, int32_t *R_Channel)
+void MP45DT02_AudioRead_24b(int32_t *M_Channel)
 {
-	while(I2S2_state == Busy){};
-	I2S2_state = Busy;
-	for (uint32_t i = 0; i + 3 < I2S2_BUFFER_LENGTH / 2; i += 4)
+	while(I2S3_rxState == Busy){};
+	I2S3_rxState = Busy;
+	PDM_Filter(pI2S3_rxBuffer, M_Channel, &PDM1_filter_handler);
+	for(uint32_t i = 0; i < I2S3_BUFFER_LENGTH; i++)
 	{
-		L_Channel[i / 4] = (int32_t) ( (rxBuf[i]     << 16) | rxBuf[i + 1] );
-		R_Channel[i / 4] = (int32_t) ( (rxBuf[i + 2] << 16) | rxBuf[i + 3] );
+		M_Channel[i] = (int32_t) (pI2S3_rxBuffer[i] << 8);
+	}
+	CDC_Printf("Value = %d\r\n", pI2S3_rxBuffer[100]);
+}
+
+void PmodI2S2_AudioRead_24b(int32_t *L_Channel, int32_t *R_Channel)
+{
+	while(I2S2_rxState == Busy){};
+	I2S2_rxState = Busy;
+	for (uint32_t i = 0; i + 3 < I2S2_BUFFER_LENGTH/2; i += 4)
+	{
+		L_Channel[i / 4] = (int32_t) ( (pI2S2_rxBuffer[i]     << 16) | pI2S2_rxBuffer[i + 1] );
+		R_Channel[i / 4] = (int32_t) ( (pI2S2_rxBuffer[i + 2] << 16) | pI2S2_rxBuffer[i + 3] );
 	}
 }
 
-void PmodI2S2_AudioWrite_24b(uint16_t *txBuf, int32_t *L_Channel, int32_t *R_Channel)
+void PmodI2S2_AudioWrite_24b(int32_t *L_Channel, int32_t *R_Channel)
 {
-	while(I2S2_state == Busy){};
-	I2S2_state = Busy;
-	for (uint32_t i = 0; i + 3 < I2S2_BUFFER_LENGTH / 2; i += 4)
+	while(I2S2_txState == Busy){};
+	I2S2_txState = Busy;
+	for (uint32_t i = 0; i + 3 < I2S2_BUFFER_LENGTH/2; i += 4)
 	{
-		txBuf[i]     = (L_Channel[i / 4] >> 16) & 0xFFFF;
-		txBuf[i + 1] =  L_Channel[i / 4] & 0xFFFF;
-		txBuf[i + 2] = (R_Channel[i / 4] >> 16) & 0xFFFF;
-		txBuf[i + 3] =  R_Channel[i / 4] & 0xFFFF;
+		pI2S2_txBuffer[i]     = (L_Channel[i / 4] >> 16) & 0xFFFF;
+		pI2S2_txBuffer[i + 1] =  L_Channel[i / 4] & 0xFFFF;
+		pI2S2_txBuffer[i + 2] = (R_Channel[i / 4] >> 16) & 0xFFFF;
+		pI2S2_txBuffer[i + 3] =  R_Channel[i / 4] & 0xFFFF;
 	}
 }
 
