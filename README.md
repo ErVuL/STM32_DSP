@@ -9,17 +9,17 @@ Audio device
 The audio device used here is a PmodI2S2.
 Audio is set to 24 bits with a 93.75 kHz frequency sampling.  
 The peripheral is connected as follow:
- _________________       ______________
- |  STM32F407VG  |       |  PmodI2S2  |
- |               |       |            |
- |            PC2|-------|A/D SDOUT 10|
- |            PC3|-------|D/A SDIN 4  |
- |            PC6|-------|MCLK 1&7    |
- |           PB10|-------|SCLK 3&9    |
- |           PB12|-------|LRCK 2&8    |
- |            3v3|-------|VCC 6 or 12 |
- |            GND|-------|GND 5 or 11 |
- |_______________|       |____________|
+ _________________       ______________  
+ |  STM32F407VG  |       |  PmodI2S2  |  
+ |               |       |            |  
+ |            PC2|-------|A/D SDOUT 10|  
+ |            PC3|-------|D/A SDIN 4  |  
+ |            PC6|-------|MCLK 1&7    |  
+ |           PB10|-------|SCLK 3&9    |  
+ |           PB12|-------|LRCK 2&8    |  
+ |            3v3|-------|VCC 6 or 12 |  
+ |            GND|-------|GND 5 or 11 |  
+ |_______________|       |____________|  
           
 Serial Communication
 ====================
