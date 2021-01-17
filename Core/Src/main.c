@@ -33,7 +33,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define I2S2_BUFLEN 4096
+#define I2S2_BUFLEN 16384
 #define I2S3_BUFLEN (I2S2_BUFLEN/8)
 #define BUFLEN    	(I2S2_BUFLEN/8) // sample
 #define FREQ_SAMP	93750 // Hz
@@ -61,12 +61,12 @@ uint8_t I2S2_rxState;						// I2S2 rx CallBack state
 uint8_t I2S2_txState;						// I2S2 tx CallBack state
 uint8_t I2S3_rxState;						// I2S3 rx CallBack state
 enum I2S_state {Busy, HalfCplt, Cplt};		// I2S CallBack states definition
-uint16_t I2S2_rxBuffer[I2S2_BUFLEN]; 		// I2S2 rxBuffer for PmodI2S2
-uint16_t I2S2_txBuffer[I2S2_BUFLEN]; 		// I2S2 txBuffer for PmodI2S2
-uint16_t I2S3_rxBuffer[I2S3_BUFLEN]; 		// I2S3 rxBuffer for PDM Mic
-uint16_t *pI2S2_txBuffer = I2S2_txBuffer;	// |
-uint16_t *pI2S2_rxBuffer = I2S2_rxBuffer;	// | automatic ptr for read and write functions
-uint16_t *pI2S3_rxBuffer = I2S3_rxBuffer;	// |
+uint16_t I2S2_rxBuf[I2S2_BUFLEN]; 			// I2S2 rxBuffer for PmodI2S2
+uint16_t I2S2_txBuf[I2S2_BUFLEN]; 			// I2S2 txBuffer for PmodI2S2
+uint16_t I2S3_rxBuf[I2S3_BUFLEN]; 			// I2S3 rxBuffer for PDM Mic
+uint16_t *pI2S2_txBuf = I2S2_txBuf;			// |
+uint16_t *pI2S2_rxBuf = I2S2_rxBuf;			// | automatic ptr for read and write functions
+uint16_t *pI2S3_rxBuf = I2S3_rxBuf;			// |
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -90,11 +90,11 @@ static void MX_I2S3_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	q31_t L_Buf[BUFLEN]; 					// Left channel
-	q31_t R_Buf[BUFLEN]; 					// Right Channel
-  // q31_t M_Buf[BUFFER_LENGTH]; 					// Mono Channel
-  // q31_t pState[FIR_Q31_NUMTAPS+BUFFER_LENGTH-1];
-  // const q31_t pCoeffs[FIR_Q31_NUMTAPS];
+	q31_t Lbuf[BUFLEN]; 					// Left channel
+	q31_t Rbuf[BUFLEN]; 					// Right Channel
+  // q31_t Mbuf[BUFLEN]; 					// Mono Channel
+  // q31_t pState[FIRQ31_NTAP+BUFLEN-1];
+  // const q31_t pCoeffs[FIRQ31_NTAP];
   // arm_fir_instance_q31 *FIR_q31;
 
   /* USER CODE END 1 */
@@ -129,11 +129,11 @@ int main(void)
 	CDC_Printf("\r\n================\r\n\n");
 
 	/* Start I2S coomuniation */
-	HAL_I2SEx_TransmitReceive_DMA(&hi2s2, I2S2_txBuffer, I2S2_rxBuffer, I2S2_BUFLEN / 2);
-	HAL_I2S_Receive_DMA(&hi2s3, I2S3_rxBuffer, I2S3_BUFLEN);
+	HAL_I2SEx_TransmitReceive_DMA(&hi2s2, I2S2_txBuf, I2S2_rxBuf, I2S2_BUFLEN / 2);
+	HAL_I2S_Receive_DMA(&hi2s3, I2S3_rxBuf, I2S3_BUFLEN);
 
 	/* Initialize FIR  Filter */
- // arm_fir_init_q31(FIR_q31, FIR_Q31_NUMTAPS, pCoeffs, pState, BUFFER_LENGTH);
+ // arm_fir_init_q31(FIR_q31, FIRQ31_NTAP, pCoeffs, pState, BUFLEN);
 
   /* USER CODE END 2 */
 
@@ -151,13 +151,13 @@ int main(void)
 
 		/* Read audio data */
 	 // MP45DT02_monoR24(M_Buffer); // do not work actually !
-		PMODI2S2_stereoR24(L_Buf, R_Buf);
+		PMODI2S2_stereoRq31(Lbuf, Rbuf);
 
 		/* Signal Processing */
 	 // arm_fir_q31(FIR_q31, L_Buf, L_Buf, BUFFER_LENGTH);
 
 		/* Write audio data */
-		PMODI2S2_stereoW24(L_Buf, R_Buf);
+		PMODI2S2_stereoWq31(Lbuf, Rbuf);
 
 		/* Command from Port COM available */
 		if (CDC_RX_DATA_PENDING)
@@ -459,44 +459,44 @@ static void MX_GPIO_Init(void)
 
 void HAL_I2SEx_TxRxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-	pI2S2_txBuffer = &I2S2_txBuffer[0];
-	pI2S2_rxBuffer = &I2S2_rxBuffer[0];
+	pI2S2_txBuf = &I2S2_txBuf[0];
+	pI2S2_rxBuf = &I2S2_rxBuf[0];
 	I2S2_rxState = HalfCplt;
 	I2S2_txState = HalfCplt;
 }
 
 void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-	pI2S2_txBuffer = &I2S2_txBuffer[I2S2_BUFLEN/2];
-	pI2S2_rxBuffer = &I2S2_rxBuffer[I2S2_BUFLEN/2];
+	pI2S2_txBuf = &I2S2_txBuf[I2S2_BUFLEN/2];
+	pI2S2_rxBuf = &I2S2_rxBuf[I2S2_BUFLEN/2];
 	I2S2_rxState = Cplt;
 	I2S2_txState = Cplt;
 }
 
 void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-	pI2S3_rxBuffer = &I2S3_rxBuffer[0];
+	pI2S3_rxBuf = &I2S3_rxBuf[0];
 	I2S3_rxState = HalfCplt;
 }
 
 void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-	pI2S3_rxBuffer = &I2S3_rxBuffer[I2S3_BUFLEN/2];
+	pI2S3_rxBuf = &I2S3_rxBuf[I2S3_BUFLEN/2];
 	I2S3_rxState = Cplt;
 }
 
-void MP45DT02_monoR24(q31_t *M_Channel)
+void MP45DT02_monoRq31(q31_t *Mbuf)
 {
 	while(I2S3_rxState == Busy)
 	{
 	}
 	I2S3_rxState = Busy;
-	PDM_Filter(pI2S3_rxBuffer, M_Channel, &PDM1_filter_handler);
-	CDC_Printf("Value = %d\r\n", pI2S3_rxBuffer[12]);
-	CDC_Printf("Value     = %d\r\n", pI2S3_rxBuffer[11]);
+	PDM_Filter(pI2S3_rxBuf, Mbuf, &PDM1_filter_handler);
+	CDC_Printf("Value = %d\r\n", pI2S3_rxBuf[12]);
+	CDC_Printf("Value     = %d\r\n", pI2S3_rxBuf[11]);
 }
 
-void PMODI2S2_stereoR24(q31_t *L_Channel, q31_t *R_Channel)
+void PMODI2S2_stereoRq31(q31_t *Lbuf, q31_t *Rbuf)
 {
 	while(I2S2_rxState == Busy)
 	{
@@ -504,12 +504,12 @@ void PMODI2S2_stereoR24(q31_t *L_Channel, q31_t *R_Channel)
 	I2S2_rxState = Busy;
 	for (uint16_t i = 0; i + 3 < I2S2_BUFLEN/2; i += 4)
 	{
-		L_Channel[i / 4] = (q31_t) ( (pI2S2_rxBuffer[i]     << 16) | pI2S2_rxBuffer[i + 1] );
-		R_Channel[i / 4] = (q31_t) ( (pI2S2_rxBuffer[i + 2] << 16) | pI2S2_rxBuffer[i + 3] );
+		Lbuf[i / 4] = (q31_t) ((pI2S2_rxBuf[i]     << 16) | pI2S2_rxBuf[i + 1]);
+		Rbuf[i / 4] = (q31_t) ((pI2S2_rxBuf[i + 2] << 16) | pI2S2_rxBuf[i + 3]);
 	}
 }
 
-void PMODI2S2_stereoW24(q31_t *L_Channel, q31_t *R_Channel)
+void PMODI2S2_stereoWq31(q31_t *Lbuf, q31_t *Rbuf)
 {
 	while(I2S2_txState == Busy)
 	{
@@ -517,10 +517,10 @@ void PMODI2S2_stereoW24(q31_t *L_Channel, q31_t *R_Channel)
 	I2S2_txState = Busy;
 	for (uint16_t i = 0; i + 3 < I2S2_BUFLEN/2; i += 4)
 	{
-		pI2S2_txBuffer[i]     = (L_Channel[i / 4] >> 16) & 0xFFFF;
-		pI2S2_txBuffer[i + 1] =  L_Channel[i / 4] & 0xFFFF;
-		pI2S2_txBuffer[i + 2] = (R_Channel[i / 4] >> 16) & 0xFFFF;
-		pI2S2_txBuffer[i + 3] =  R_Channel[i / 4] & 0xFFFF;
+		pI2S2_txBuf[i]     = (Lbuf[i / 4] >> 16) & 0xFFFF;
+		pI2S2_txBuf[i + 1] =  Lbuf[i / 4] & 0xFFFF;
+		pI2S2_txBuf[i + 2] = (Rbuf[i / 4] >> 16) & 0xFFFF;
+		pI2S2_txBuf[i + 3] =  Rbuf[i / 4] & 0xFFFF;
 	}
 }
 

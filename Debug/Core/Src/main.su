@@ -1,4 +1,4 @@
-main.c:90:5:main	4232	static
+main.c:90:5:main	16520	static
 main.c:183:6:SystemClock_Config	104	static
 main.c:235:13:MX_CRC_Init	8	static
 main.c:262:13:MX_I2S2_Init	8	static
@@ -9,7 +9,7 @@ main.c:460:6:HAL_I2SEx_TxRxHalfCpltCallback	16	static
 main.c:468:6:HAL_I2SEx_TxRxCpltCallback	16	static
 main.c:476:6:HAL_I2S_RxHalfCpltCallback	16	static
 main.c:482:6:HAL_I2S_RxCpltCallback	16	static
-main.c:488:6:MP45DT02_AudioRead_24b	16	static
-main.c:499:6:PmodI2S2_AudioRead_24b	24	static
-main.c:512:6:PmodI2S2_AudioWrite_24b	24	static
+main.c:488:6:MP45DT02_monoR24	16	static
+main.c:499:6:PMODI2S2_stereoR24	24	static
+main.c:512:6:PMODI2S2_stereoW24	24	static
 main.c:533:6:Error_Handler	8	static

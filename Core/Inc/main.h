@@ -54,9 +54,9 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-void PMODI2S2_stereoR24(q31_t * L_Channel, q31_t * R_Channel);
-void PMODI2S2_stereoW24(q31_t * L_Channel, q31_t * R_Channel);
-void MP45DT02_monoR24(q31_t *M_Channel);
+void PMODI2S2_stereoRq31(q31_t * Lbuf, q31_t * Rbuf);
+void PMODI2S2_stereoWq31(q31_t * Lbuf, q31_t * Rbuf);
+void MP45DT02_monoRq31(q31_t *Mbuf);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

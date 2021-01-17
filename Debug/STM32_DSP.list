@@ -21,29 +21,29 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, DATA
   8 .data         00000760  20000000  0800cdc8  00020000  2**2
                   CONTENTS, ALLOC, LOAD, DATA
-  9 .bss          0000510c  20000760  0800d528  00020760  2**2
+  9 .bss          00011d0c  20000760  0800d528  00020760  2**2
                   ALLOC
- 10 ._user_heap_stack 00000604  2000586c  0800d528  0002586c  2**0
+ 10 ._user_heap_stack 00000604  2001246c  0800d528  0002246c  2**0
                   ALLOC
  11 .ARM.attributes 00000030  00000000  00000000  00020760  2**0
                   CONTENTS, READONLY
- 12 .debug_info   0001863d  00000000  00000000  00020790  2**0
+ 12 .debug_info   00018640  00000000  00000000  00020790  2**0
                   CONTENTS, READONLY, DEBUGGING
- 13 .debug_abbrev 00003a39  00000000  00000000  00038dcd  2**0
+ 13 .debug_abbrev 00003a39  00000000  00000000  00038dd0  2**0
                   CONTENTS, READONLY, DEBUGGING
- 14 .debug_aranges 00000eb0  00000000  00000000  0003c808  2**3
+ 14 .debug_aranges 00000eb0  00000000  00000000  0003c810  2**3
                   CONTENTS, READONLY, DEBUGGING
- 15 .debug_ranges 00000d08  00000000  00000000  0003d6b8  2**3
+ 15 .debug_ranges 00000d08  00000000  00000000  0003d6c0  2**3
                   CONTENTS, READONLY, DEBUGGING
- 16 .debug_macro  0002487f  00000000  00000000  0003e3c0  2**0
+ 16 .debug_macro  0002487f  00000000  00000000  0003e3c8  2**0
                   CONTENTS, READONLY, DEBUGGING
- 17 .debug_line   00010a78  00000000  00000000  00062c3f  2**0
+ 17 .debug_line   00010a78  00000000  00000000  00062c47  2**0
                   CONTENTS, READONLY, DEBUGGING
- 18 .debug_str    000c7c57  00000000  00000000  000736b7  2**0
+ 18 .debug_str    000c7c27  00000000  00000000  000736bf  2**0
                   CONTENTS, READONLY, DEBUGGING
- 19 .comment      000000fa  00000000  00000000  0013b30e  2**0
+ 19 .comment      000000fa  00000000  00000000  0013b2e6  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  000045b4  00000000  00000000  0013b408  2**2
+ 20 .debug_frame  000045b4  00000000  00000000  0013b3e0  2**2
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
@@ -793,7 +793,7 @@ Disassembly of section .text:
 int main(void)
 {
  80009b8:	b580      	push	{r7, lr}
- 80009ba:	f5ad 5d84 	sub.w	sp, sp, #4224	; 0x1080
+ 80009ba:	f5ad 4d81 	sub.w	sp, sp, #16512	; 0x4080
  80009be:	af00      	add	r7, sp, #0
   /* USER CODE END 1 */
 
@@ -843,14 +843,14 @@ int main(void)
  80009f8:	f007 fde0 	bl	80085bc <CDC_Printf>
 
 	/* Start I2S coomuniation */
-	HAL_I2SEx_TransmitReceive_DMA(&hi2s2, I2S2_txBuffer, I2S2_rxBuffer, I2S2_BUFFER_LENGTH / 2);
- 80009fc:	f44f 6300 	mov.w	r3, #2048	; 0x800
+	HAL_I2SEx_TransmitReceive_DMA(&hi2s2, I2S2_txBuffer, I2S2_rxBuffer, I2S2_BUFLEN / 2);
+ 80009fc:	f44f 5300 	mov.w	r3, #8192	; 0x2000
  8000a00:	4a1f      	ldr	r2, [pc, #124]	; (8000a80 <main+0xc8>)
  8000a02:	4920      	ldr	r1, [pc, #128]	; (8000a84 <main+0xcc>)
  8000a04:	4820      	ldr	r0, [pc, #128]	; (8000a88 <main+0xd0>)
  8000a06:	f002 f8b9 	bl	8002b7c <HAL_I2SEx_TransmitReceive_DMA>
-	HAL_I2S_Receive_DMA(&hi2s3, I2S3_rxBuffer, I2S3_BUFFER_LENGTH);
- 8000a0a:	f44f 7200 	mov.w	r2, #512	; 0x200
+	HAL_I2S_Receive_DMA(&hi2s3, I2S3_rxBuffer, I2S3_BUFLEN);
+ 8000a0a:	f44f 6200 	mov.w	r2, #2048	; 0x800
  8000a0e:	491f      	ldr	r1, [pc, #124]	; (8000a8c <main+0xd4>)
  8000a10:	481f      	ldr	r0, [pc, #124]	; (8000a90 <main+0xd8>)
  8000a12:	f001 fea7 	bl	8002764 <HAL_I2S_Receive_DMA>
@@ -868,24 +868,24 @@ int main(void)
  8000a22:	f007 fe31 	bl	8008688 <CDC_Spin>
 
 		/* Read audio data */
-	 // MP45DT02_AudioRead_24b(M_Buffer); // do not work actually !
-		PmodI2S2_AudioRead_24b(L_Buf, R_Buf);
+	 // MP45DT02_monoR24(M_Buffer); // do not work actually !
+		PMODI2S2_stereoR24(L_Buf, R_Buf);
  8000a26:	f107 0280 	add.w	r2, r7, #128	; 0x80
- 8000a2a:	f507 6308 	add.w	r3, r7, #2176	; 0x880
+ 8000a2a:	f507 5302 	add.w	r3, r7, #8320	; 0x2080
  8000a2e:	4611      	mov	r1, r2
  8000a30:	4618      	mov	r0, r3
- 8000a32:	f000 fb17 	bl	8001064 <PmodI2S2_AudioRead_24b>
+ 8000a32:	f000 fb17 	bl	8001064 <PMODI2S2_stereoR24>
 
 		/* Signal Processing */
 	 // arm_fir_q31(FIR_q31, L_Buf, L_Buf, BUFFER_LENGTH);
 
 		/* Write audio data */
-		PmodI2S2_AudioWrite_24b(L_Buf, R_Buf);
+		PMODI2S2_stereoW24(L_Buf, R_Buf);
  8000a36:	f107 0280 	add.w	r2, r7, #128	; 0x80
- 8000a3a:	f507 6308 	add.w	r3, r7, #2176	; 0x880
+ 8000a3a:	f507 5302 	add.w	r3, r7, #8320	; 0x2080
  8000a3e:	4611      	mov	r1, r2
  8000a40:	4618      	mov	r0, r3
- 8000a42:	f000 fb61 	bl	8001108 <PmodI2S2_AudioWrite_24b>
+ 8000a42:	f000 fb61 	bl	8001108 <PMODI2S2_stereoW24>
 
 		/* Command from Port COM available */
 		if (CDC_RX_DATA_PENDING)
@@ -923,11 +923,11 @@ int main(void)
  8000a76:	bf00      	nop
  8000a78:	0800ca80 	.word	0x0800ca80
  8000a7c:	0800ca94 	.word	0x0800ca94
- 8000a80:	20002884 	.word	0x20002884
+ 8000a80:	20008884 	.word	0x20008884
  8000a84:	20000884 	.word	0x20000884
- 8000a88:	20004da8 	.word	0x20004da8
- 8000a8c:	20004884 	.word	0x20004884
- 8000a90:	20004df0 	.word	0x20004df0
+ 8000a88:	200119a8 	.word	0x200119a8
+ 8000a8c:	20010884 	.word	0x20010884
+ 8000a90:	200119f0 	.word	0x200119f0
  8000a94:	40020c00 	.word	0x40020c00
  8000a98:	0800caac 	.word	0x0800caac
  8000a9c:	20000786 	.word	0x20000786
@@ -1206,7 +1206,7 @@ static void MX_I2S2_Init(void)
  8000c32:	bf00      	nop
  8000c34:	bd80      	pop	{r7, pc}
  8000c36:	bf00      	nop
- 8000c38:	20004da8 	.word	0x20004da8
+ 8000c38:	200119a8 	.word	0x200119a8
  8000c3c:	40003800 	.word	0x40003800
  8000c40:	00017700 	.word	0x00017700
 
@@ -1278,7 +1278,7 @@ static void MX_I2S3_Init(void)
  8000c92:	bf00      	nop
  8000c94:	bd80      	pop	{r7, pc}
  8000c96:	bf00      	nop
- 8000c98:	20004df0 	.word	0x20004df0
+ 8000c98:	200119f0 	.word	0x200119f0
  8000c9c:	40003c00 	.word	0x40003c00
  8000ca0:	00017700 	.word	0x00017700
 
@@ -1760,9 +1760,9 @@ void HAL_I2SEx_TxRxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
  8000fb0:	20000400 	.word	0x20000400
  8000fb4:	20000884 	.word	0x20000884
  8000fb8:	20000404 	.word	0x20000404
- 8000fbc:	20002884 	.word	0x20002884
- 8000fc0:	20004c84 	.word	0x20004c84
- 8000fc4:	20004c85 	.word	0x20004c85
+ 8000fbc:	20008884 	.word	0x20008884
+ 8000fc0:	20011884 	.word	0x20011884
+ 8000fc4:	20011885 	.word	0x20011885
 
 08000fc8 <HAL_I2SEx_TxRxCpltCallback>:
 
@@ -1772,11 +1772,11 @@ void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef *hi2s)
  8000fca:	b083      	sub	sp, #12
  8000fcc:	af00      	add	r7, sp, #0
  8000fce:	6078      	str	r0, [r7, #4]
-	pI2S2_txBuffer = &I2S2_txBuffer[I2S2_BUFFER_LENGTH/2];
+	pI2S2_txBuffer = &I2S2_txBuffer[I2S2_BUFLEN/2];
  8000fd0:	4b08      	ldr	r3, [pc, #32]	; (8000ff4 <HAL_I2SEx_TxRxCpltCallback+0x2c>)
  8000fd2:	4a09      	ldr	r2, [pc, #36]	; (8000ff8 <HAL_I2SEx_TxRxCpltCallback+0x30>)
  8000fd4:	601a      	str	r2, [r3, #0]
-	pI2S2_rxBuffer = &I2S2_rxBuffer[I2S2_BUFFER_LENGTH/2];
+	pI2S2_rxBuffer = &I2S2_rxBuffer[I2S2_BUFLEN/2];
  8000fd6:	4b09      	ldr	r3, [pc, #36]	; (8000ffc <HAL_I2SEx_TxRxCpltCallback+0x34>)
  8000fd8:	4a09      	ldr	r2, [pc, #36]	; (8001000 <HAL_I2SEx_TxRxCpltCallback+0x38>)
  8000fda:	601a      	str	r2, [r3, #0]
@@ -1795,11 +1795,11 @@ void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef *hi2s)
  8000fee:	f85d 7b04 	ldr.w	r7, [sp], #4
  8000ff2:	4770      	bx	lr
  8000ff4:	20000400 	.word	0x20000400
- 8000ff8:	20001884 	.word	0x20001884
+ 8000ff8:	20004884 	.word	0x20004884
  8000ffc:	20000404 	.word	0x20000404
- 8001000:	20003884 	.word	0x20003884
- 8001004:	20004c84 	.word	0x20004c84
- 8001008:	20004c85 	.word	0x20004c85
+ 8001000:	2000c884 	.word	0x2000c884
+ 8001004:	20011884 	.word	0x20011884
+ 8001008:	20011885 	.word	0x20011885
 
 0800100c <HAL_I2S_RxHalfCpltCallback>:
 
@@ -1824,8 +1824,8 @@ void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
  8001026:	f85d 7b04 	ldr.w	r7, [sp], #4
  800102a:	4770      	bx	lr
  800102c:	20000408 	.word	0x20000408
- 8001030:	20004884 	.word	0x20004884
- 8001034:	20004c86 	.word	0x20004c86
+ 8001030:	20010884 	.word	0x20010884
+ 8001034:	20011886 	.word	0x20011886
 
 08001038 <HAL_I2S_RxCpltCallback>:
 
@@ -1835,7 +1835,7 @@ void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s)
  800103a:	b083      	sub	sp, #12
  800103c:	af00      	add	r7, sp, #0
  800103e:	6078      	str	r0, [r7, #4]
-	pI2S3_rxBuffer = &I2S3_rxBuffer[I2S3_BUFFER_LENGTH/2];
+	pI2S3_rxBuffer = &I2S3_rxBuffer[I2S3_BUFLEN/2];
  8001040:	4b05      	ldr	r3, [pc, #20]	; (8001058 <HAL_I2S_RxCpltCallback+0x20>)
  8001042:	4a06      	ldr	r2, [pc, #24]	; (800105c <HAL_I2S_RxCpltCallback+0x24>)
  8001044:	601a      	str	r2, [r3, #0]
@@ -1850,15 +1850,15 @@ void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s)
  8001052:	f85d 7b04 	ldr.w	r7, [sp], #4
  8001056:	4770      	bx	lr
  8001058:	20000408 	.word	0x20000408
- 800105c:	20004a84 	.word	0x20004a84
- 8001060:	20004c86 	.word	0x20004c86
+ 800105c:	20011084 	.word	0x20011084
+ 8001060:	20011886 	.word	0x20011886
 
-08001064 <PmodI2S2_AudioRead_24b>:
+08001064 <PMODI2S2_stereoR24>:
 	CDC_Printf("Value = %d\r\n", pI2S3_rxBuffer[12]);
 	CDC_Printf("Value     = %d\r\n", pI2S3_rxBuffer[11]);
 }
 
-void PmodI2S2_AudioRead_24b(q31_t *L_Channel, q31_t *R_Channel)
+void PMODI2S2_stereoR24(q31_t *L_Channel, q31_t *R_Channel)
 {
  8001064:	b480      	push	{r7}
  8001066:	b085      	sub	sp, #20
@@ -1867,30 +1867,30 @@ void PmodI2S2_AudioRead_24b(q31_t *L_Channel, q31_t *R_Channel)
  800106c:	6039      	str	r1, [r7, #0]
 	while(I2S2_rxState == Busy)
  800106e:	bf00      	nop
- 8001070:	4b23      	ldr	r3, [pc, #140]	; (8001100 <PmodI2S2_AudioRead_24b+0x9c>)
+ 8001070:	4b23      	ldr	r3, [pc, #140]	; (8001100 <PMODI2S2_stereoR24+0x9c>)
  8001072:	781b      	ldrb	r3, [r3, #0]
  8001074:	2b00      	cmp	r3, #0
- 8001076:	d0fb      	beq.n	8001070 <PmodI2S2_AudioRead_24b+0xc>
+ 8001076:	d0fb      	beq.n	8001070 <PMODI2S2_stereoR24+0xc>
 	{
 	}
 	I2S2_rxState = Busy;
- 8001078:	4b21      	ldr	r3, [pc, #132]	; (8001100 <PmodI2S2_AudioRead_24b+0x9c>)
+ 8001078:	4b21      	ldr	r3, [pc, #132]	; (8001100 <PMODI2S2_stereoR24+0x9c>)
  800107a:	2200      	movs	r2, #0
  800107c:	701a      	strb	r2, [r3, #0]
-	for (uint16_t i = 0; i + 3 < I2S2_BUFFER_LENGTH/2; i += 4)
+	for (uint16_t i = 0; i + 3 < I2S2_BUFLEN/2; i += 4)
  800107e:	2300      	movs	r3, #0
  8001080:	81fb      	strh	r3, [r7, #14]
- 8001082:	e031      	b.n	80010e8 <PmodI2S2_AudioRead_24b+0x84>
+ 8001082:	e031      	b.n	80010e8 <PMODI2S2_stereoR24+0x84>
 	{
-		L_Channel[i / 4] = (q31_t) ( (pI2S2_rxBuffer[i]     << 16) | pI2S2_rxBuffer[i + 1] );
- 8001084:	4b1f      	ldr	r3, [pc, #124]	; (8001104 <PmodI2S2_AudioRead_24b+0xa0>)
+		L_Channel[i / 4] = (q31_t) ((pI2S2_rxBuffer[i]     << 16) | (pI2S2_rxBuffer[i + 1] << 0));
+ 8001084:	4b1f      	ldr	r3, [pc, #124]	; (8001104 <PMODI2S2_stereoR24+0xa0>)
  8001086:	681a      	ldr	r2, [r3, #0]
  8001088:	89fb      	ldrh	r3, [r7, #14]
  800108a:	005b      	lsls	r3, r3, #1
  800108c:	4413      	add	r3, r2
  800108e:	881b      	ldrh	r3, [r3, #0]
  8001090:	041a      	lsls	r2, r3, #16
- 8001092:	4b1c      	ldr	r3, [pc, #112]	; (8001104 <PmodI2S2_AudioRead_24b+0xa0>)
+ 8001092:	4b1c      	ldr	r3, [pc, #112]	; (8001104 <PMODI2S2_stereoR24+0xa0>)
  8001094:	6819      	ldr	r1, [r3, #0]
  8001096:	89fb      	ldrh	r3, [r7, #14]
  8001098:	3301      	adds	r3, #1
@@ -1906,8 +1906,8 @@ void PmodI2S2_AudioRead_24b(q31_t *L_Channel, q31_t *R_Channel)
  80010ac:	440b      	add	r3, r1
  80010ae:	4302      	orrs	r2, r0
  80010b0:	601a      	str	r2, [r3, #0]
-		R_Channel[i / 4] = (q31_t) ( (pI2S2_rxBuffer[i + 2] << 16) | pI2S2_rxBuffer[i + 3] );
- 80010b2:	4b14      	ldr	r3, [pc, #80]	; (8001104 <PmodI2S2_AudioRead_24b+0xa0>)
+		R_Channel[i / 4] = (q31_t) ((pI2S2_rxBuffer[i + 2] << 16) | (pI2S2_rxBuffer[i + 3] << 0));
+ 80010b2:	4b14      	ldr	r3, [pc, #80]	; (8001104 <PMODI2S2_stereoR24+0xa0>)
  80010b4:	681a      	ldr	r2, [r3, #0]
  80010b6:	89fb      	ldrh	r3, [r7, #14]
  80010b8:	3302      	adds	r3, #2
@@ -1915,7 +1915,7 @@ void PmodI2S2_AudioRead_24b(q31_t *L_Channel, q31_t *R_Channel)
  80010bc:	4413      	add	r3, r2
  80010be:	881b      	ldrh	r3, [r3, #0]
  80010c0:	041a      	lsls	r2, r3, #16
- 80010c2:	4b10      	ldr	r3, [pc, #64]	; (8001104 <PmodI2S2_AudioRead_24b+0xa0>)
+ 80010c2:	4b10      	ldr	r3, [pc, #64]	; (8001104 <PMODI2S2_stereoR24+0xa0>)
  80010c4:	6819      	ldr	r1, [r3, #0]
  80010c6:	89fb      	ldrh	r3, [r7, #14]
  80010c8:	3303      	adds	r3, #3
@@ -1931,14 +1931,14 @@ void PmodI2S2_AudioRead_24b(q31_t *L_Channel, q31_t *R_Channel)
  80010dc:	440b      	add	r3, r1
  80010de:	4302      	orrs	r2, r0
  80010e0:	601a      	str	r2, [r3, #0]
-	for (uint16_t i = 0; i + 3 < I2S2_BUFFER_LENGTH/2; i += 4)
+	for (uint16_t i = 0; i + 3 < I2S2_BUFLEN/2; i += 4)
  80010e2:	89fb      	ldrh	r3, [r7, #14]
  80010e4:	3304      	adds	r3, #4
  80010e6:	81fb      	strh	r3, [r7, #14]
  80010e8:	89fb      	ldrh	r3, [r7, #14]
  80010ea:	3303      	adds	r3, #3
- 80010ec:	f5b3 6f00 	cmp.w	r3, #2048	; 0x800
- 80010f0:	dbc8      	blt.n	8001084 <PmodI2S2_AudioRead_24b+0x20>
+ 80010ec:	f5b3 5f00 	cmp.w	r3, #8192	; 0x2000
+ 80010f0:	dbc8      	blt.n	8001084 <PMODI2S2_stereoR24+0x20>
 	}
 }
  80010f2:	bf00      	nop
@@ -1947,12 +1947,12 @@ void PmodI2S2_AudioRead_24b(q31_t *L_Channel, q31_t *R_Channel)
  80010f8:	f85d 7b04 	ldr.w	r7, [sp], #4
  80010fc:	4770      	bx	lr
  80010fe:	bf00      	nop
- 8001100:	20004c84 	.word	0x20004c84
+ 8001100:	20011884 	.word	0x20011884
  8001104:	20000404 	.word	0x20000404
 
-08001108 <PmodI2S2_AudioWrite_24b>:
+08001108 <PMODI2S2_stereoW24>:
 
-void PmodI2S2_AudioWrite_24b(q31_t *L_Channel, q31_t *R_Channel)
+void PMODI2S2_stereoW24(q31_t *L_Channel, q31_t *R_Channel)
 {
  8001108:	b480      	push	{r7}
  800110a:	b085      	sub	sp, #20
@@ -1961,20 +1961,20 @@ void PmodI2S2_AudioWrite_24b(q31_t *L_Channel, q31_t *R_Channel)
  8001110:	6039      	str	r1, [r7, #0]
 	while(I2S2_txState == Busy)
  8001112:	bf00      	nop
- 8001114:	4b2a      	ldr	r3, [pc, #168]	; (80011c0 <PmodI2S2_AudioWrite_24b+0xb8>)
+ 8001114:	4b2a      	ldr	r3, [pc, #168]	; (80011c0 <PMODI2S2_stereoW24+0xb8>)
  8001116:	781b      	ldrb	r3, [r3, #0]
  8001118:	2b00      	cmp	r3, #0
- 800111a:	d0fb      	beq.n	8001114 <PmodI2S2_AudioWrite_24b+0xc>
+ 800111a:	d0fb      	beq.n	8001114 <PMODI2S2_stereoW24+0xc>
 	{
 	}
 	I2S2_txState = Busy;
- 800111c:	4b28      	ldr	r3, [pc, #160]	; (80011c0 <PmodI2S2_AudioWrite_24b+0xb8>)
+ 800111c:	4b28      	ldr	r3, [pc, #160]	; (80011c0 <PMODI2S2_stereoW24+0xb8>)
  800111e:	2200      	movs	r2, #0
  8001120:	701a      	strb	r2, [r3, #0]
-	for (uint16_t i = 0; i + 3 < I2S2_BUFFER_LENGTH/2; i += 4)
+	for (uint16_t i = 0; i + 3 < I2S2_BUFLEN/2; i += 4)
  8001122:	2300      	movs	r3, #0
  8001124:	81fb      	strh	r3, [r7, #14]
- 8001126:	e03f      	b.n	80011a8 <PmodI2S2_AudioWrite_24b+0xa0>
+ 8001126:	e03f      	b.n	80011a8 <PMODI2S2_stereoW24+0xa0>
 	{
 		pI2S2_txBuffer[i]     = (L_Channel[i / 4] >> 16) & 0xFFFF;
  8001128:	89fb      	ldrh	r3, [r7, #14]
@@ -1985,14 +1985,14 @@ void PmodI2S2_AudioWrite_24b(q31_t *L_Channel, q31_t *R_Channel)
  8001132:	4413      	add	r3, r2
  8001134:	681b      	ldr	r3, [r3, #0]
  8001136:	0c19      	lsrs	r1, r3, #16
- 8001138:	4b22      	ldr	r3, [pc, #136]	; (80011c4 <PmodI2S2_AudioWrite_24b+0xbc>)
+ 8001138:	4b22      	ldr	r3, [pc, #136]	; (80011c4 <PMODI2S2_stereoW24+0xbc>)
  800113a:	681a      	ldr	r2, [r3, #0]
  800113c:	89fb      	ldrh	r3, [r7, #14]
  800113e:	005b      	lsls	r3, r3, #1
  8001140:	4413      	add	r3, r2
  8001142:	b28a      	uxth	r2, r1
  8001144:	801a      	strh	r2, [r3, #0]
-		pI2S2_txBuffer[i + 1] =  L_Channel[i / 4] & 0xFFFF;
+		pI2S2_txBuffer[i + 1] = (L_Channel[i / 4] >> 0 ) & 0xFFFF;
  8001146:	89fb      	ldrh	r3, [r7, #14]
  8001148:	089b      	lsrs	r3, r3, #2
  800114a:	b29b      	uxth	r3, r3
@@ -2000,7 +2000,7 @@ void PmodI2S2_AudioWrite_24b(q31_t *L_Channel, q31_t *R_Channel)
  800114e:	687a      	ldr	r2, [r7, #4]
  8001150:	4413      	add	r3, r2
  8001152:	6819      	ldr	r1, [r3, #0]
- 8001154:	4b1b      	ldr	r3, [pc, #108]	; (80011c4 <PmodI2S2_AudioWrite_24b+0xbc>)
+ 8001154:	4b1b      	ldr	r3, [pc, #108]	; (80011c4 <PMODI2S2_stereoW24+0xbc>)
  8001156:	681a      	ldr	r2, [r3, #0]
  8001158:	89fb      	ldrh	r3, [r7, #14]
  800115a:	3301      	adds	r3, #1
@@ -2017,7 +2017,7 @@ void PmodI2S2_AudioWrite_24b(q31_t *L_Channel, q31_t *R_Channel)
  800116e:	4413      	add	r3, r2
  8001170:	681b      	ldr	r3, [r3, #0]
  8001172:	0c19      	lsrs	r1, r3, #16
- 8001174:	4b13      	ldr	r3, [pc, #76]	; (80011c4 <PmodI2S2_AudioWrite_24b+0xbc>)
+ 8001174:	4b13      	ldr	r3, [pc, #76]	; (80011c4 <PMODI2S2_stereoW24+0xbc>)
  8001176:	681a      	ldr	r2, [r3, #0]
  8001178:	89fb      	ldrh	r3, [r7, #14]
  800117a:	3302      	adds	r3, #2
@@ -2025,7 +2025,7 @@ void PmodI2S2_AudioWrite_24b(q31_t *L_Channel, q31_t *R_Channel)
  800117e:	4413      	add	r3, r2
  8001180:	b28a      	uxth	r2, r1
  8001182:	801a      	strh	r2, [r3, #0]
-		pI2S2_txBuffer[i + 3] =  R_Channel[i / 4] & 0xFFFF;
+		pI2S2_txBuffer[i + 3] = (R_Channel[i / 4] >> 0 ) & 0xFFFF;
  8001184:	89fb      	ldrh	r3, [r7, #14]
  8001186:	089b      	lsrs	r3, r3, #2
  8001188:	b29b      	uxth	r3, r3
@@ -2033,7 +2033,7 @@ void PmodI2S2_AudioWrite_24b(q31_t *L_Channel, q31_t *R_Channel)
  800118c:	683a      	ldr	r2, [r7, #0]
  800118e:	4413      	add	r3, r2
  8001190:	6819      	ldr	r1, [r3, #0]
- 8001192:	4b0c      	ldr	r3, [pc, #48]	; (80011c4 <PmodI2S2_AudioWrite_24b+0xbc>)
+ 8001192:	4b0c      	ldr	r3, [pc, #48]	; (80011c4 <PMODI2S2_stereoW24+0xbc>)
  8001194:	681a      	ldr	r2, [r3, #0]
  8001196:	89fb      	ldrh	r3, [r7, #14]
  8001198:	3303      	adds	r3, #3
@@ -2041,14 +2041,14 @@ void PmodI2S2_AudioWrite_24b(q31_t *L_Channel, q31_t *R_Channel)
  800119c:	4413      	add	r3, r2
  800119e:	b28a      	uxth	r2, r1
  80011a0:	801a      	strh	r2, [r3, #0]
-	for (uint16_t i = 0; i + 3 < I2S2_BUFFER_LENGTH/2; i += 4)
+	for (uint16_t i = 0; i + 3 < I2S2_BUFLEN/2; i += 4)
  80011a2:	89fb      	ldrh	r3, [r7, #14]
  80011a4:	3304      	adds	r3, #4
  80011a6:	81fb      	strh	r3, [r7, #14]
  80011a8:	89fb      	ldrh	r3, [r7, #14]
  80011aa:	3303      	adds	r3, #3
- 80011ac:	f5b3 6f00 	cmp.w	r3, #2048	; 0x800
- 80011b0:	dbba      	blt.n	8001128 <PmodI2S2_AudioWrite_24b+0x20>
+ 80011ac:	f5b3 5f00 	cmp.w	r3, #8192	; 0x2000
+ 80011b0:	dbba      	blt.n	8001128 <PMODI2S2_stereoW24+0x20>
 	}
 }
  80011b2:	bf00      	nop
@@ -2057,7 +2057,7 @@ void PmodI2S2_AudioWrite_24b(q31_t *L_Channel, q31_t *R_Channel)
  80011b8:	f85d 7b04 	ldr.w	r7, [sp], #4
  80011bc:	4770      	bx	lr
  80011be:	bf00      	nop
- 80011c0:	20004c85 	.word	0x20004c85
+ 80011c0:	20011885 	.word	0x20011885
  80011c4:	20000400 	.word	0x20000400
 
 080011c8 <Error_Handler>:
@@ -2602,13 +2602,13 @@ void HAL_I2S_MspInit(I2S_HandleTypeDef* hi2s)
  8001524:	40023800 	.word	0x40023800
  8001528:	40020800 	.word	0x40020800
  800152c:	40020400 	.word	0x40020400
- 8001530:	20004c88 	.word	0x20004c88
+ 8001530:	20011888 	.word	0x20011888
  8001534:	40026058 	.word	0x40026058
- 8001538:	20004ce8 	.word	0x20004ce8
+ 8001538:	200118e8 	.word	0x200118e8
  800153c:	40026070 	.word	0x40026070
  8001540:	40003c00 	.word	0x40003c00
  8001544:	40020000 	.word	0x40020000
- 8001548:	20004d48 	.word	0x20004d48
+ 8001548:	20011948 	.word	0x20011948
  800154c:	40026010 	.word	0x40026010
 
 08001550 <NMI_Handler>:
@@ -2794,7 +2794,7 @@ void DMA1_Stream0_IRQHandler(void)
  80015b6:	bf00      	nop
  80015b8:	bd80      	pop	{r7, pc}
  80015ba:	bf00      	nop
- 80015bc:	20004d48 	.word	0x20004d48
+ 80015bc:	20011948 	.word	0x20011948
 
 080015c0 <DMA1_Stream3_IRQHandler>:
 
@@ -2818,7 +2818,7 @@ void DMA1_Stream3_IRQHandler(void)
  80015ca:	bf00      	nop
  80015cc:	bd80      	pop	{r7, pc}
  80015ce:	bf00      	nop
- 80015d0:	20004c88 	.word	0x20004c88
+ 80015d0:	20011888 	.word	0x20011888
 
 080015d4 <DMA1_Stream4_IRQHandler>:
 
@@ -2842,7 +2842,7 @@ void DMA1_Stream4_IRQHandler(void)
  80015de:	bf00      	nop
  80015e0:	bd80      	pop	{r7, pc}
  80015e2:	bf00      	nop
- 80015e4:	20004ce8 	.word	0x20004ce8
+ 80015e4:	200118e8 	.word	0x200118e8
 
 080015e8 <OTG_FS_IRQHandler>:
 
@@ -2866,7 +2866,7 @@ void OTG_FS_IRQHandler(void)
  80015f2:	bf00      	nop
  80015f4:	bd80      	pop	{r7, pc}
  80015f6:	bf00      	nop
- 80015f8:	20005460 	.word	0x20005460
+ 80015f8:	20012060 	.word	0x20012060
 
 080015fc <_sbrk>:
  *
@@ -2947,7 +2947,7 @@ void *_sbrk(ptrdiff_t incr)
  8001658:	20020000 	.word	0x20020000
  800165c:	00000400 	.word	0x00000400
  8001660:	20000780 	.word	0x20000780
- 8001664:	20005870 	.word	0x20005870
+ 8001664:	20012470 	.word	0x20012470
 
 08001668 <SystemInit>:
   *         configuration.
@@ -3069,7 +3069,7 @@ LoopFillZerobss:
   ldr  r2, =_sbss
  80016dc:	20000760 	.word	0x20000760
   ldr  r3, = _ebss
- 80016e0:	2000586c 	.word	0x2000586c
+ 80016e0:	2001246c 	.word	0x2001246c
 
 080016e4 <ADC_IRQHandler>:
  * @retval None       
@@ -3232,7 +3232,7 @@ __weak void HAL_IncTick(void)
  80017a8:	4770      	bx	lr
  80017aa:	bf00      	nop
  80017ac:	20000414 	.word	0x20000414
- 80017b0:	20004e38 	.word	0x20004e38
+ 80017b0:	20011a38 	.word	0x20011a38
 
 080017b4 <HAL_GetTick>:
   * @note This function is declared as __weak to be overwritten in case of other 
@@ -3252,7 +3252,7 @@ __weak uint32_t HAL_GetTick(void)
  80017c0:	f85d 7b04 	ldr.w	r7, [sp], #4
  80017c4:	4770      	bx	lr
  80017c6:	bf00      	nop
- 80017c8:	20004e38 	.word	0x20004e38
+ 80017c8:	20011a38 	.word	0x20011a38
 
 080017cc <HAL_Delay>:
   *       implementations in user file.
@@ -21561,9 +21561,9 @@ void MX_PDM2PCM_Init(void)
 }
  80081a4:	bf00      	nop
  80081a6:	bd80      	pop	{r7, pc}
- 80081a8:	20004e44 	.word	0x20004e44
+ 80081a8:	20011a44 	.word	0x20011a44
  80081ac:	7d70a3d6 	.word	0x7d70a3d6
- 80081b0:	20004e3c 	.word	0x20004e3c
+ 80081b0:	20011a3c 	.word	0x20011a3c
 
 080081b4 <MX_USB_DEVICE_Init>:
 /**
@@ -21631,7 +21631,7 @@ void MX_USB_DEVICE_Init(void)
  8008200:	bf00      	nop
  8008202:	bd80      	pop	{r7, pc}
  8008204:	2000053c 	.word	0x2000053c
- 8008208:	20004e90 	.word	0x20004e90
+ 8008208:	20011a90 	.word	0x20011a90
  800820c:	20000424 	.word	0x20000424
  8008210:	20000528 	.word	0x20000528
 
@@ -21661,9 +21661,9 @@ static int8_t CDC_Init_FS(void)
 }
  800822c:	4618      	mov	r0, r3
  800822e:	bd80      	pop	{r7, pc}
- 8008230:	200051e0 	.word	0x200051e0
- 8008234:	20004e90 	.word	0x20004e90
- 8008238:	20005160 	.word	0x20005160
+ 8008230:	20011de0 	.word	0x20011de0
+ 8008234:	20011a90 	.word	0x20011a90
+ 8008238:	20011d60 	.word	0x20011d60
 
 0800823c <CDC_DeInit_FS>:
 /**
@@ -22093,12 +22093,12 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
  8008500:	bd80      	pop	{r7, pc}
  8008502:	bf00      	nop
  8008504:	40020c00 	.word	0x40020c00
- 8008508:	20004e90 	.word	0x20004e90
+ 8008508:	20011a90 	.word	0x20011a90
  800850c:	20000787 	.word	0x20000787
  8008510:	20000788 	.word	0x20000788
- 8008514:	200051e0 	.word	0x200051e0
+ 8008514:	20011de0 	.word	0x20011de0
  8008518:	2000078c 	.word	0x2000078c
- 800851c:	20005160 	.word	0x20005160
+ 800851c:	20011d60 	.word	0x20011d60
  8008520:	20000786 	.word	0x20000786
 
 08008524 <CDC_Transmit_FS>:
@@ -22168,7 +22168,7 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
  800858c:	bd80      	pop	{r7, pc}
  800858e:	bf00      	nop
  8008590:	40020c00 	.word	0x40020c00
- 8008594:	20004e90 	.word	0x20004e90
+ 8008594:	20011a90 	.word	0x20011a90
 
 08008598 <CDC_TransmitCplt_FS>:
   * @param  Buf: Buffer of data to be received
@@ -22255,7 +22255,7 @@ void CDC_Printf(const char *format, ...)
  8008608:	b004      	add	sp, #16
  800860a:	4770      	bx	lr
  800860c:	20000785 	.word	0x20000785
- 8008610:	200051e0 	.word	0x200051e0
+ 8008610:	20011de0 	.word	0x20011de0
 
 08008614 <CDC_Scanf>:
 
@@ -22321,7 +22321,7 @@ void CDC_Scanf(const char *format, ...)
  8008678:	40020c00 	.word	0x40020c00
  800867c:	20000786 	.word	0x20000786
  8008680:	20000785 	.word	0x20000785
- 8008684:	20005160 	.word	0x20005160
+ 8008684:	20011d60 	.word	0x20011d60
 
 08008688 <CDC_Spin>:
 
@@ -22535,7 +22535,7 @@ uint8_t * USBD_FS_ProductStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length
  80087de:	46bd      	mov	sp, r7
  80087e0:	bd80      	pop	{r7, pc}
  80087e2:	bf00      	nop
- 80087e4:	20005260 	.word	0x20005260
+ 80087e4:	20011e60 	.word	0x20011e60
  80087e8:	0800cb34 	.word	0x0800cb34
 
 080087ec <USBD_FS_ManufacturerStrDescriptor>:
@@ -22564,7 +22564,7 @@ uint8_t * USBD_FS_ManufacturerStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *l
  8008806:	3708      	adds	r7, #8
  8008808:	46bd      	mov	sp, r7
  800880a:	bd80      	pop	{r7, pc}
- 800880c:	20005260 	.word	0x20005260
+ 800880c:	20011e60 	.word	0x20011e60
  8008810:	0800cb4c 	.word	0x0800cb4c
 
 08008814 <USBD_FS_SerialStrDescriptor>:
@@ -22643,7 +22643,7 @@ uint8_t * USBD_FS_ConfigStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length)
  8008866:	46bd      	mov	sp, r7
  8008868:	bd80      	pop	{r7, pc}
  800886a:	bf00      	nop
- 800886c:	20005260 	.word	0x20005260
+ 800886c:	20011e60 	.word	0x20011e60
  8008870:	0800cb60 	.word	0x0800cb60
 
 08008874 <USBD_FS_InterfaceStrDescriptor>:
@@ -22687,7 +22687,7 @@ uint8_t * USBD_FS_InterfaceStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *leng
  80088a2:	46bd      	mov	sp, r7
  80088a4:	bd80      	pop	{r7, pc}
  80088a6:	bf00      	nop
- 80088a8:	20005260 	.word	0x20005260
+ 80088a8:	20011e60 	.word	0x20011e60
  80088ac:	0800cb6c 	.word	0x0800cb6c
 
 080088b0 <Get_SerialNum>:
@@ -23416,7 +23416,7 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
  8008cba:	3708      	adds	r7, #8
  8008cbc:	46bd      	mov	sp, r7
  8008cbe:	bd80      	pop	{r7, pc}
- 8008cc0:	20005460 	.word	0x20005460
+ 8008cc0:	20012060 	.word	0x20012060
 
 08008cc4 <USBD_LL_Start>:
   * @brief  Starts the low level portion of the device driver.
@@ -26793,7 +26793,7 @@ USBD_StatusTypeDef USBD_Get_USB_Status(HAL_StatusTypeDef hal_status)
  800afae:	b103      	cbz	r3, 800afb2 <_sbrk_r+0x1a>
  800afb0:	602b      	str	r3, [r5, #0]
  800afb2:	bd38      	pop	{r3, r4, r5, pc}
- 800afb4:	20005868 	.word	0x20005868
+ 800afb4:	20012468 	.word	0x20012468
 
 0800afb8 <_vsiprintf_r>:
  800afb8:	b500      	push	{lr}
