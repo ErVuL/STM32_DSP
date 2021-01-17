@@ -444,8 +444,7 @@ void CDC_Spin(const char *format, ...)
 		vsprintf(str, format, arg);
 		va_end(arg);
 		CDC_Printf("\r[ %c%c ] %s ", w[i], w[i], str);
-		i++;
-		i = i%4;
+		i = (i+1)%4;
 		clk = HAL_GetTick();
 	}
 }

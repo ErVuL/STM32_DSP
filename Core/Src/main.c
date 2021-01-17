@@ -33,11 +33,11 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define I2S2_BUFFER_LENGTH 	8192
+#define I2S2_BUFFER_LENGTH 	4096
 #define I2S3_BUFFER_LENGTH 	(I2S2_BUFFER_LENGTH/8)
-#define CHANNEL_LENGTH    	(I2S2_BUFFER_LENGTH/8) // sample
-#define OVERLAP				256   // sample
-#define FREQUENCY_SAMPLING	93500 // Hz
+#define BUFFER_LENGTH    	(I2S2_BUFFER_LENGTH/8) // sample
+#define FREQUENCY_SAMPLING	93750 // Hz
+#define FIR_Q31_NUMTAPS		128
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -51,7 +51,9 @@ I2S_HandleTypeDef hi2s2;
 I2S_HandleTypeDef hi2s3;
 DMA_HandleTypeDef hdma_i2s2_ext_rx;
 DMA_HandleTypeDef hdma_spi2_tx;
+DMA_HandleTypeDef hdma_spi3_rx;
 
+DMA_HandleTypeDef hdma_memtomem_dma2_stream0;
 /* USER CODE BEGIN PV */
 extern volatile _Bool HOST_PORT_COM_OPEN;  		// Port COM fully connected
 extern volatile _Bool CDC_RX_DATA_PENDING; 		// Data available from port COM
@@ -88,9 +90,13 @@ static void MX_I2S3_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	int32_t L_Channel[CHANNEL_LENGTH]; 			// Left channel
-	int32_t R_Channel[CHANNEL_LENGTH]; 			// Right Channel
-	int32_t M_Channel[CHANNEL_LENGTH]; 			// Mono Channel
+	q31_t L_Buf[BUFFER_LENGTH]; 					// Left channel
+	q31_t R_Buf[BUFFER_LENGTH]; 					// Right Channel
+  // q31_t M_Buf[BUFFER_LENGTH]; 					// Mono Channel
+  // q31_t pState[FIR_Q31_NUMTAPS+BUFFER_LENGTH-1];
+  // const q31_t pCoeffs[FIR_Q31_NUMTAPS];
+  // arm_fir_instance_q31 *FIR_q31;
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -119,19 +125,16 @@ int main(void)
 	char cmd[APP_RX_DATA_SIZE];
 	HAL_Delay(1500);
 	CDC_Clear();
-	CDC_Printf("\r\n       ================");
-	CDC_Printf("\r\n       *** DSP V0.0 ***");
-	CDC_Printf("\r\n       ================\r\n\n");
-	if (!HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_14))
-	{
-		CDC_Printf("[ OK ] Hardware initialization\r\n");
-	}
-	else
-	{
-		CDC_Printf("[ ER ] Hardware initialization\r\n");
-	}
+	CDC_Printf("\r\n*** DSP V0.0 ***");
+	CDC_Printf("\r\n================\r\n\n");
+
+	/* Start I2S coomuniation */
 	HAL_I2SEx_TransmitReceive_DMA(&hi2s2, I2S2_txBuffer, I2S2_rxBuffer, I2S2_BUFFER_LENGTH / 2);
 	HAL_I2S_Receive_DMA(&hi2s3, I2S3_rxBuffer, I2S3_BUFFER_LENGTH);
+
+	/* Initialize FIR  Filter */
+ // arm_fir_init_q31(FIR_q31, FIR_Q31_NUMTAPS, pCoeffs, pState, BUFFER_LENGTH);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -147,16 +150,14 @@ int main(void)
 		CDC_Spin("Processing");
 
 		/* Read audio data */
-		//MP45DT02_AudioRead_24b(M_Channel);
-		PmodI2S2_AudioRead_24b(L_Channel, R_Channel);
+	 // MP45DT02_AudioRead_24b(M_Buffer); // do not work actually !
+		PmodI2S2_AudioRead_24b(L_Buf, R_Buf);
 
-		/* Process */
-
-
-
+		/* Signal Processing */
+	 // arm_fir_q31(FIR_q31, L_Buf, L_Buf, BUFFER_LENGTH);
 
 		/* Write audio data */
-		PmodI2S2_AudioWrite_24b(L_Channel, R_Channel);
+		PmodI2S2_AudioWrite_24b(L_Buf, R_Buf);
 
 		/* Command from Port COM available */
 		if (CDC_RX_DATA_PENDING)
@@ -302,7 +303,7 @@ static void MX_I2S3_Init(void)
   hi2s3.Instance = SPI3;
   hi2s3.Init.Mode = I2S_MODE_MASTER_RX;
   hi2s3.Init.Standard = I2S_STANDARD_MSB;
-  hi2s3.Init.DataFormat = I2S_DATAFORMAT_16B_EXTENDED;
+  hi2s3.Init.DataFormat = I2S_DATAFORMAT_16B;
   hi2s3.Init.MCLKOutput = I2S_MCLKOUTPUT_ENABLE;
   hi2s3.Init.AudioFreq = I2S_AUDIOFREQ_96K;
   hi2s3.Init.CPOL = I2S_CPOL_LOW;
@@ -320,14 +321,39 @@ static void MX_I2S3_Init(void)
 
 /**
   * Enable DMA controller clock
+  * Configure DMA for memory to memory transfers
+  *   hdma_memtomem_dma2_stream0
   */
 static void MX_DMA_Init(void)
 {
 
   /* DMA controller clock enable */
   __HAL_RCC_DMA1_CLK_ENABLE();
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* Configure DMA request hdma_memtomem_dma2_stream0 on DMA2_Stream0 */
+  hdma_memtomem_dma2_stream0.Instance = DMA2_Stream0;
+  hdma_memtomem_dma2_stream0.Init.Channel = DMA_CHANNEL_0;
+  hdma_memtomem_dma2_stream0.Init.Direction = DMA_MEMORY_TO_MEMORY;
+  hdma_memtomem_dma2_stream0.Init.PeriphInc = DMA_PINC_ENABLE;
+  hdma_memtomem_dma2_stream0.Init.MemInc = DMA_MINC_ENABLE;
+  hdma_memtomem_dma2_stream0.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+  hdma_memtomem_dma2_stream0.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+  hdma_memtomem_dma2_stream0.Init.Mode = DMA_NORMAL;
+  hdma_memtomem_dma2_stream0.Init.Priority = DMA_PRIORITY_LOW;
+  hdma_memtomem_dma2_stream0.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
+  hdma_memtomem_dma2_stream0.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
+  hdma_memtomem_dma2_stream0.Init.MemBurst = DMA_MBURST_SINGLE;
+  hdma_memtomem_dma2_stream0.Init.PeriphBurst = DMA_PBURST_SINGLE;
+  if (HAL_DMA_Init(&hdma_memtomem_dma2_stream0) != HAL_OK)
+  {
+    Error_Handler( );
+  }
 
   /* DMA interrupt init */
+  /* DMA1_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
   /* DMA1_Stream3_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream3_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream3_IRQn);
@@ -451,7 +477,6 @@ void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 {
 	pI2S3_rxBuffer = &I2S3_rxBuffer[0];
 	I2S3_rxState = HalfCplt;
-	CDC_Printf("There ! \r\n");
 }
 
 void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s)
@@ -460,34 +485,37 @@ void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s)
 	I2S3_rxState = Cplt;
 }
 
-void MP45DT02_AudioRead_24b(int32_t *M_Channel)
+void MP45DT02_AudioRead_24b(q31_t *M_Channel)
 {
-	while(I2S3_rxState == Busy){};
+	while(I2S3_rxState == Busy)
+	{
+	}
 	I2S3_rxState = Busy;
 	PDM_Filter(pI2S3_rxBuffer, M_Channel, &PDM1_filter_handler);
-	for(uint32_t i = 0; i < I2S3_BUFFER_LENGTH; i++)
-	{
-		M_Channel[i] = (int32_t) (pI2S3_rxBuffer[i] << 8);
-	}
-	CDC_Printf("Value = %d\r\n", pI2S3_rxBuffer[100]);
+	CDC_Printf("Value = %d\r\n", pI2S3_rxBuffer[12]);
+	CDC_Printf("Value     = %d\r\n", pI2S3_rxBuffer[11]);
 }
 
-void PmodI2S2_AudioRead_24b(int32_t *L_Channel, int32_t *R_Channel)
+void PmodI2S2_AudioRead_24b(q31_t *L_Channel, q31_t *R_Channel)
 {
-	while(I2S2_rxState == Busy){};
+	while(I2S2_rxState == Busy)
+	{
+	}
 	I2S2_rxState = Busy;
-	for (uint32_t i = 0; i + 3 < I2S2_BUFFER_LENGTH/2; i += 4)
+	for (uint16_t i = 0; i + 3 < I2S2_BUFFER_LENGTH/2; i += 4)
 	{
-		L_Channel[i / 4] = (int32_t) ( (pI2S2_rxBuffer[i]     << 16) | pI2S2_rxBuffer[i + 1] );
-		R_Channel[i / 4] = (int32_t) ( (pI2S2_rxBuffer[i + 2] << 16) | pI2S2_rxBuffer[i + 3] );
+		L_Channel[i / 4] = (q31_t) ( (pI2S2_rxBuffer[i]     << 16) | pI2S2_rxBuffer[i + 1] );
+		R_Channel[i / 4] = (q31_t) ( (pI2S2_rxBuffer[i + 2] << 16) | pI2S2_rxBuffer[i + 3] );
 	}
 }
 
-void PmodI2S2_AudioWrite_24b(int32_t *L_Channel, int32_t *R_Channel)
+void PmodI2S2_AudioWrite_24b(q31_t *L_Channel, q31_t *R_Channel)
 {
-	while(I2S2_txState == Busy){};
+	while(I2S2_txState == Busy)
+	{
+	}
 	I2S2_txState = Busy;
-	for (uint32_t i = 0; i + 3 < I2S2_BUFFER_LENGTH/2; i += 4)
+	for (uint16_t i = 0; i + 3 < I2S2_BUFFER_LENGTH/2; i += 4)
 	{
 		pI2S2_txBuffer[i]     = (L_Channel[i / 4] >> 16) & 0xFFFF;
 		pI2S2_txBuffer[i + 1] =  L_Channel[i / 4] & 0xFFFF;

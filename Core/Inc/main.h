@@ -29,10 +29,10 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#define ARM_MATH_CM4 // select cortex M4 CMSIS lib
+#include "arm_math.h"// load CMSIS lib
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -54,9 +54,9 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-void PmodI2S2_AudioRead_24b(int32_t * L_Channel, int32_t * R_Channel);
-void PmodI2S2_AudioWrite_24b(int32_t * L_Channel, int32_t * R_Channel);
-void MP45DT02_AudioRead_24b(int32_t *M_Channel);
+void PmodI2S2_AudioRead_24b(q31_t * L_Channel, q31_t * R_Channel);
+void PmodI2S2_AudioWrite_24b(q31_t * L_Channel, q31_t * R_Channel);
+void MP45DT02_AudioRead_24b(q31_t *M_Channel);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

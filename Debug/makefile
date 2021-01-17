@@ -52,7 +52,7 @@ all: STM32_DSP.elf secondary-outputs
 
 # Tool invocations
 STM32_DSP.elf: $(OBJS) $(USER_OBJS) /home/theo/STM32_workspace/STM32_DSP/STM32F407VGTX_FLASH.ld
-	arm-none-eabi-gcc -o "STM32_DSP.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/home/theo/STM32_workspace/STM32_DSP/STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="STM32_DSP.map" -Wl,--gc-sections -static -L../Middlewares/ST/STM32_Audio/Addons/PDM/Lib --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+	arm-none-eabi-gcc -o "STM32_DSP.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/home/theo/STM32_workspace/STM32_DSP/STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="STM32_DSP.map" -Wl,--gc-sections -static -L../Middlewares/ST/STM32_Audio/Addons/PDM/Lib -L"/home/theo/STM32_workspace/STM32_DSP/Core/Lib" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

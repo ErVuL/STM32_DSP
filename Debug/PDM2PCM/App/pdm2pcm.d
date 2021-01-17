@@ -30,6 +30,7 @@ PDM2PCM/App/pdm2pcm.o: ../PDM2PCM/App/pdm2pcm.c ../PDM2PCM/App/pdm2pcm.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_usb.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd_ex.h \
+ ../Core/Inc/arm_math.h \
  ../Middlewares/ST/STM32_Audio/Addons/PDM/Inc/pdm2pcm_glo.h
 
 ../PDM2PCM/App/pdm2pcm.h:
@@ -97,5 +98,7 @@ PDM2PCM/App/pdm2pcm.o: ../PDM2PCM/App/pdm2pcm.c ../PDM2PCM/App/pdm2pcm.h \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_usb.h:
 
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pcd_ex.h:
+
+../Core/Inc/arm_math.h:
 
 ../Middlewares/ST/STM32_Audio/Addons/PDM/Inc/pdm2pcm_glo.h:
