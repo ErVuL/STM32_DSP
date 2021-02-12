@@ -110,7 +110,8 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
 void CDC_Printf(const char *format, ...);
 void CDC_Scanf(const char *format, ...);
-void CDC_Spin(const char *format, ...);
+void d_print(const char *format, ...);
+void d_spin(void);
 void CDC_Clear(void);
 void CDC_SetPos(uint16_t x, uint16_t y);
 void CDC_Move(int16_t x, int16_t y);

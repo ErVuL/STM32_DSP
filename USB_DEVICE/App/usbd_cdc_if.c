@@ -302,14 +302,6 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 			rxLen = 0;
 		}
 
-		/* VT100 escape sequences must be 16 bits packets */
-		if(Buf[0] == '\033' && Buf[1] == '\0')
-		{
-			UserTxBufferFS[txLen++] = Buf[i];
-			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
-			return USBD_BUSY;
-		}
-
 		/* If Backspace key: clear the last char */
 		if ((UserTxBufferFS[txLen++] = Buf[i]) == '\b')
 		{
@@ -320,6 +312,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 				rxLen--;
 			}
 		}
+
 		/* Else if Enter key: add a \n to terminal and extract output buffer */
 		else if (Buf[i] == '\r' || Buf[i] == '\0')
 		{
@@ -333,6 +326,12 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 		else
 		{
 			RX_Buf_Temp[rxLen++] = Buf[i];
+		}
+
+		/* Avoid user moving cursor */
+		if(RX_Buf_Temp[MAX(rxLen-3,0)] == '\033' && RX_Buf_Temp[MAX(rxLen-2,0)] == '[' && (RX_Buf_Temp[rxLen] == 'A' || RX_Buf_Temp[rxLen] == 'B' || RX_Buf_Temp[rxLen] == 'C' || RX_Buf_Temp[rxLen] == 'D'))
+		{
+			rxLen -= 4;
 		}
 	}
 
@@ -402,11 +401,28 @@ static int8_t CDC_TransmitCplt_FS(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
 
 void CDC_Printf(const char *format, ...)
 {
+	va_list arg;
 	if (HOST_PORT_COM_OPEN)
 	{
-		va_list arg;
 		va_start(arg, format);
 		vsprintf((char*) UserTxBufferFS, format, arg);
+		va_end(arg);
+		while(CDC_Transmit_FS(UserTxBufferFS, strlen((char*) UserTxBufferFS)) == USBD_BUSY && HOST_PORT_COM_OPEN)
+		{
+		}
+	}
+}
+
+void d_print(const char *format, ...)
+{
+	va_list arg;
+	uint32_t clktime;
+	if (HOST_PORT_COM_OPEN)
+	{
+		clktime = HAL_GetTick();
+		va_start(arg, format);
+		sprintf((char*) UserTxBufferFS, "[%02lu:%02lu:%02lu.%03lu] ", (clktime/3600000)%100, (clktime/60000)%60, (clktime/1000)%60, clktime%1000);
+		vsprintf((char*) &UserTxBufferFS[15], format, arg);
 		va_end(arg);
 		while(CDC_Transmit_FS(UserTxBufferFS, strlen((char*) UserTxBufferFS)) == USBD_BUSY && HOST_PORT_COM_OPEN)
 		{
@@ -431,21 +447,16 @@ void CDC_Scanf(const char *format, ...)
 	}
 }
 
-void CDC_Spin(const char *format, ...)
+void d_spin(void)
 {
-	static uint8_t i;
-	char w[5] = "-\\|/";
-	char str[APP_TX_DATA_SIZE];
-	static uint32_t clk;
-	if (HOST_PORT_COM_OPEN && HAL_GetTick()-clk > 500)
+	static uint32_t clktime;
+	if (HOST_PORT_COM_OPEN)
 	{
-		va_list arg;
-		va_start(arg, format);
-		vsprintf(str, format, arg);
-		va_end(arg);
-		CDC_Printf("\r[ %c%c ] %s ", w[i], w[i], str);
-		i = (i+1)%4;
-		clk = HAL_GetTick();
+		clktime = HAL_GetTick();
+		sprintf((char*) UserTxBufferFS, "\033[1A\r[%02lu:%02lu:%02lu.%03lu]\033[1B\r", (clktime/3600000)%100, (clktime/60000)%60, (clktime/1000)%60, clktime%1000);
+		while(CDC_Transmit_FS(UserTxBufferFS, strlen((char*) UserTxBufferFS)) == USBD_BUSY && HOST_PORT_COM_OPEN)
+		{
+		}
 	}
 }
 

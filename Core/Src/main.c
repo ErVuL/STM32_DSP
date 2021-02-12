@@ -21,10 +21,11 @@
 #include "main.h"
 #include "pdm2pcm.h"
 #include "usb_device.h"
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "usbd_cdc_if.h"
+#include <string.h>
+//#include "stm32f4xx.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -77,6 +78,7 @@ static void MX_I2S2_Init(void);
 static void MX_CRC_Init(void);
 static void MX_I2S3_Init(void);
 /* USER CODE BEGIN PFP */
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -125,32 +127,39 @@ int main(void)
 	char cmd[APP_RX_DATA_SIZE];
 	HAL_Delay(1500);
 	CDC_Clear();
-	CDC_Printf("\r\n*** DSP V0.0 ***");
-	CDC_Printf("\r\n================\r\n\n");
+	CDC_Printf("\r\n               ================");
+	CDC_Printf("\r\n               *** DSP V1.0 ***");
+	CDC_Printf("\r\n               ================\r\n\n");
+	if(HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_14) == GPIO_PIN_SET)
+	{	d_print("/!\\ ERROR : Hardware initialization problem !\r\n");
+	}else
+	{	d_print("Hardware initialization done\r\n");
+	}
 
-	/* Start I2S coomuniation */
-	HAL_I2SEx_TransmitReceive_DMA(&hi2s2, I2S2_txBuf, I2S2_rxBuf, I2S2_BUFLEN / 2);
-	HAL_I2S_Receive_DMA(&hi2s3, I2S3_rxBuf, I2S3_BUFLEN);
+	/* Start I2S communiation */
+	if((HAL_I2SEx_TransmitReceive_DMA(&hi2s2, I2S2_txBuf, I2S2_rxBuf, I2S2_BUFLEN / 2) != HAL_OK)
+			|| (HAL_I2S_Receive_DMA(&hi2s3, I2S3_rxBuf, I2S3_BUFLEN) != HAL_OK))
+	{	d_print("/!\\ ERROR : Unable to launch I2S DMA transfert !\r\n");
+	}else
+	{	d_print("I2S communication established\r\n");
+	}
 
 	/* Initialize FIR  Filter */
  // arm_fir_init_q31(FIR_q31, FIRQ31_NTAP, pCoeffs, pState, BUFLEN);
+
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+	d_print("Processing ..\r\n");
 	while (1)
 	{
     /* USER CODE END WHILE */
-
     /* USER CODE BEGIN 3 */
 
-		/* Toggle Led and printf */
-		HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);
-		CDC_Spin("Processing");
-
 		/* Read audio data */
-	 // MP45DT02_monoR24(M_Buffer); // do not work actually !
+	 // MP45DT02_monoRq31(M_Buffer); // do not work actually !
 		PMODI2S2_stereoRq31(Lbuf, Rbuf);
 
 		/* Signal Processing */
@@ -168,10 +177,13 @@ int main(void)
 
 			/* Execute command */
 			if (!strcmp(cmd, "clear"))
-			{
-				CDC_Clear();
+			{	CDC_Clear();
 			}
 		}
+
+		/* Toggle Led and update chrono on port COM */
+		HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);
+		d_spin();
 	}
   /* USER CODE END 3 */
 }
@@ -535,6 +547,7 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
 	/* User can add his own implementation to report the HAL error return state */
 	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+	d_print("/!\\ FATAL ERROR !");
   /* USER CODE END Error_Handler_Debug */
 }
 
