@@ -127,7 +127,8 @@ void MP45DT02_monoRq31(q31_t *Mbuf);
 #define MEMS_INT2_Pin GPIO_PIN_1
 #define MEMS_INT2_GPIO_Port GPIOE
 /* USER CODE BEGIN Private defines */
-
+#define TRUE 	1
+#define FALSE 	0
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

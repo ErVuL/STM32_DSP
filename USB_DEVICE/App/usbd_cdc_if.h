@@ -108,13 +108,15 @@ extern USBD_CDC_ItfTypeDef USBD_Interface_fops_FS;
 uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
 
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
-void CDC_Printf(const char *format, ...);
-void CDC_Scanf(const char *format, ...);
-void d_print(const char *format, ...);
-void d_spin(void);
+void _printf(const char *format, ...);
+void _scanf(const char *format, ...);
+void _cprintf(const char *format, ...);
+void _cspin(void);
 void CDC_Clear(void);
 void CDC_SetPos(uint16_t x, uint16_t y);
 void CDC_Move(int16_t x, int16_t y);
+void CDC_rxPrintf_ON(void);
+void CDC_rxPrintf_OFF(void);
 /* USER CODE END EXPORTED_FUNCTIONS */
 
 /**

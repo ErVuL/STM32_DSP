@@ -68,6 +68,7 @@ uint16_t I2S3_rxBuf[I2S3_BUFLEN]; 			// I2S3 rxBuffer for PDM Mic
 uint16_t *pI2S2_txBuf = I2S2_txBuf;			// |
 uint16_t *pI2S2_rxBuf = I2S2_rxBuf;			// | automatic ptr for read and write functions
 uint16_t *pI2S3_rxBuf = I2S3_rxBuf;			// |
+enum MainTask {WAIT, PROCESS, RECORD};		// Main task definition
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -92,13 +93,13 @@ static void MX_I2S3_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+	uint8_t Task = WAIT;
 	q31_t Lbuf[BUFLEN]; 					// Left channel
 	q31_t Rbuf[BUFLEN]; 					// Right Channel
   // q31_t Mbuf[BUFLEN]; 					// Mono Channel
   // q31_t pState[FIRQ31_NTAP+BUFLEN-1];
   // const q31_t pCoeffs[FIRQ31_NTAP];
   // arm_fir_instance_q31 *FIR_q31;
-
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -127,22 +128,23 @@ int main(void)
 	char cmd[APP_RX_DATA_SIZE];
 	HAL_Delay(1500);
 	CDC_Clear();
-	CDC_Printf("\r\n               ================");
-	CDC_Printf("\r\n               *** DSP V1.0 ***");
-	CDC_Printf("\r\n               ================\r\n\n");
+	_printf("\r\n               ================");
+	_printf("\r\n               *** DSP V1.0 ***");
+	_printf("\r\n               ================\r\n\n");
 	if(HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_14) == GPIO_PIN_SET)
-	{	d_print("/!\\ ERROR : Hardware initialization problem !\r\n");
+	{	_cprintf("/!\\ ERROR : Hardware initialization problem !\r\n");
 	}else
-	{	d_print("Hardware initialization done\r\n");
+	{	_cprintf("Hardware initialization done\r\n");
 	}
 
 	/* Start I2S communiation */
 	if((HAL_I2SEx_TransmitReceive_DMA(&hi2s2, I2S2_txBuf, I2S2_rxBuf, I2S2_BUFLEN / 2) != HAL_OK)
 			|| (HAL_I2S_Receive_DMA(&hi2s3, I2S3_rxBuf, I2S3_BUFLEN) != HAL_OK))
-	{	d_print("/!\\ ERROR : Unable to launch I2S DMA transfert !\r\n");
+	{	_cprintf("/!\\ ERROR : Unable to launch I2S DMA transfert !\r\n");
 	}else
-	{	d_print("I2S communication established\r\n");
+	{	_cprintf("I2S communication established\r\n");
 	}
+	CDC_rxPrintf_ON();
 
 	/* Initialize FIR  Filter */
  // arm_fir_init_q31(FIR_q31, FIRQ31_NTAP, pCoeffs, pState, BUFLEN);
@@ -152,38 +154,64 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-	d_print("Processing ..\r\n");
 	while (1)
 	{
     /* USER CODE END WHILE */
     /* USER CODE BEGIN 3 */
 
-		/* Read audio data */
-	 // MP45DT02_monoRq31(M_Buffer); // do not work actually !
-		PMODI2S2_stereoRq31(Lbuf, Rbuf);
-
-		/* Signal Processing */
-	 // arm_fir_q31(FIR_q31, L_Buf, L_Buf, BUFFER_LENGTH);
-
-		/* Write audio data */
-		PMODI2S2_stereoWq31(Lbuf, Rbuf);
-
 		/* Command from Port COM available */
 		if (CDC_RX_DATA_PENDING)
 		{
 			/* Read command */
-			CDC_Scanf("%s", cmd);
-			CDC_RX_DATA_PENDING = 0;
+			_scanf("%s", cmd);
+			CDC_RX_DATA_PENDING = FALSE;
 
 			/* Execute command */
 			if (!strcmp(cmd, "clear"))
 			{	CDC_Clear();
 			}
+			else if((!strcmp(cmd, "q") || !strcmp(cmd, "Q")) && Task != WAIT)
+			{
+				Task = WAIT;
+				_cprintf("Process stopped by user\r\n");
+				CDC_rxPrintf_ON();
+			}
+			else if (!strcmp(cmd, "process") && Task != PROCESS)
+			{
+				Task = PROCESS;
+				CDC_rxPrintf_OFF();
+				_cprintf("Processing, type \"q\" to stop\r\n");
+			}
+			else
+			{
+				_cprintf("/!\\ Unknown Command !\r\n");
+			}
+		}
+
+		/* Execute selected task */
+		switch(Task)
+		{
+			case(PROCESS):
+				{
+					/* Read audio data */
+				 // MP45DT02_monoRq31(M_Buffer); // do not work actually !
+					PMODI2S2_stereoRq31(Lbuf, Rbuf);
+
+					/* Signal Processing */
+				 // arm_fir_q31(FIR_q31, L_Buf, L_Buf, BUFFER_LENGTH);
+
+					/* Write audio data */
+					PMODI2S2_stereoWq31(Lbuf, Rbuf);
+					_cspin();
+					break;
+				}
+			default:
+				break;
 		}
 
 		/* Toggle Led and update chrono on port COM */
 		HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);
-		d_spin();
+
 	}
   /* USER CODE END 3 */
 }
@@ -504,8 +532,8 @@ void MP45DT02_monoRq31(q31_t *Mbuf)
 	}
 	I2S3_rxState = Busy;
 	PDM_Filter(pI2S3_rxBuf, Mbuf, &PDM1_filter_handler);
-	CDC_Printf("Value = %d\r\n", pI2S3_rxBuf[12]);
-	CDC_Printf("Value     = %d\r\n", pI2S3_rxBuf[11]);
+	_printf("Value = %d\r\n", pI2S3_rxBuf[12]);
+	_printf("Value     = %d\r\n", pI2S3_rxBuf[11]);
 }
 
 void PMODI2S2_stereoRq31(q31_t *Lbuf, q31_t *Rbuf)
@@ -547,7 +575,7 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
 	/* User can add his own implementation to report the HAL error return state */
 	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
-	d_print("/!\\ FATAL ERROR !");
+	_cprintf("/!\\ FATAL ERROR !");
   /* USER CODE END Error_Handler_Debug */
 }
 
