@@ -19,8 +19,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "pdm2pcm.h"
 #include "usb_device.h"
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "usbd_cdc_if.h"
@@ -49,10 +49,8 @@
 CRC_HandleTypeDef hcrc;
 
 I2S_HandleTypeDef hi2s2;
-I2S_HandleTypeDef hi2s3;
 DMA_HandleTypeDef hdma_i2s2_ext_rx;
 DMA_HandleTypeDef hdma_spi2_tx;
-DMA_HandleTypeDef hdma_spi3_rx;
 
 DMA_HandleTypeDef hdma_memtomem_dma2_stream0;
 /* USER CODE BEGIN PV */
@@ -60,14 +58,11 @@ extern volatile _Bool HOST_PORT_COM_OPEN;  	// Port COM fully connected
 extern volatile _Bool CDC_RX_DATA_PENDING; 	// Data available from port COM
 uint8_t I2S2_rxState;						// I2S2 rx CallBack state
 uint8_t I2S2_txState;						// I2S2 tx CallBack state
-uint8_t I2S3_rxState;						// I2S3 rx CallBack state
 enum I2S_state {Busy, HalfCplt, Cplt};		// I2S CallBack states definition
 uint16_t I2S2_rxBuf[I2S2_BUFLEN]; 			// I2S2 rxBuffer for PmodI2S2
 uint16_t I2S2_txBuf[I2S2_BUFLEN]; 			// I2S2 txBuffer for PmodI2S2
-uint16_t I2S3_rxBuf[I2S3_BUFLEN]; 			// I2S3 rxBuffer for PDM Mic
 uint16_t *pI2S2_txBuf = I2S2_txBuf;			// |
 uint16_t *pI2S2_rxBuf = I2S2_rxBuf;			// | automatic ptr for read and write functions
-uint16_t *pI2S3_rxBuf = I2S3_rxBuf;			// |
 enum MainTask {WAIT, PROCESS, RECORD};		// Main task definition
 /* USER CODE END PV */
 
@@ -77,7 +72,6 @@ static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_I2S2_Init(void);
 static void MX_CRC_Init(void);
-static void MX_I2S3_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -122,8 +116,6 @@ int main(void)
   MX_I2S2_Init();
   MX_USB_DEVICE_Init();
   MX_CRC_Init();
-  MX_I2S3_Init();
-  MX_PDM2PCM_Init();
   /* USER CODE BEGIN 2 */
 	char cmd[APP_RX_DATA_SIZE];
 	HAL_Delay(1500);
@@ -138,8 +130,7 @@ int main(void)
 	}
 
 	/* Start I2S communiation */
-	if((HAL_I2SEx_TransmitReceive_DMA(&hi2s2, I2S2_txBuf, I2S2_rxBuf, I2S2_BUFLEN / 2) != HAL_OK)
-			|| (HAL_I2S_Receive_DMA(&hi2s3, I2S3_rxBuf, I2S3_BUFLEN) != HAL_OK))
+	if(HAL_I2SEx_TransmitReceive_DMA(&hi2s2, I2S2_txBuf, I2S2_rxBuf, I2S2_BUFLEN / 2) != HAL_OK)
 	{	_cprintf("/!\\ ERROR : Unable to launch I2S DMA transfer !\r\n");
 	}else
 	{	_cprintf("I2S communication established\r\n");
@@ -159,6 +150,7 @@ int main(void)
 	while (1)
 	{
     /* USER CODE END WHILE */
+
     /* USER CODE BEGIN 3 */
 
 		/* If command available from COM port */
@@ -187,7 +179,7 @@ int main(void)
 			}
 			else
 			{
-				_cprintf("/!\\ Unknown Command !\r\n");
+				_cprintf("/!\\ Unknown command \"%s\"\r\n", cmd);
 			}
 		}
 
@@ -201,32 +193,32 @@ int main(void)
 		switch(Task)
 		{
 			case(PROCESS):
-				{
-					/* Read audio data */
-				 // MP45DT02_monoRq31(M_Buffer); // do not work actually !
-					PMODI2S2_stereoRq31(Lbuf, Rbuf);
+			{
+				/* Read audio data */
+				PMODI2S2_stereoRq31(Lbuf, Rbuf);
 
-					/* Signal Processing */
-				 // arm_fir_q31(FIR_q31, L_Buf, L_Buf, BUFFER_LENGTH);
+				/* Signal Processing */
+				// arm_fir_q31(FIR_q31, L_Buf, L_Buf, BUFFER_LENGTH);
 
-					/* Write audio data */
-					PMODI2S2_stereoWq31(Lbuf, Rbuf);
+				/* Write audio data */
+				PMODI2S2_stereoWq31(Lbuf, Rbuf);
 
-					/* Toggle Led and update chrono on port COM */
-					HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);
-					_cspin();
-					break;
-				}
+				/* Toggle Led and update chrono on port COM */
+				HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);
+				_cspin();
+				break;
+			}
+			case(WAIT):
+			{
+				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
+				break;
+			}
 			default:
 			{
 				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
 				break;
 			}
-
 		}
-
-
-
 	}
   /* USER CODE END 3 */
 }
@@ -302,7 +294,6 @@ static void MX_CRC_Init(void)
   {
     Error_Handler();
   }
-  __HAL_CRC_DR_RESET(&hcrc);
   /* USER CODE BEGIN CRC_Init 2 */
 
   /* USER CODE END CRC_Init 2 */
@@ -341,40 +332,6 @@ static void MX_I2S2_Init(void)
 }
 
 /**
-  * @brief I2S3 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_I2S3_Init(void)
-{
-
-  /* USER CODE BEGIN I2S3_Init 0 */
-
-  /* USER CODE END I2S3_Init 0 */
-
-  /* USER CODE BEGIN I2S3_Init 1 */
-
-  /* USER CODE END I2S3_Init 1 */
-  hi2s3.Instance = SPI3;
-  hi2s3.Init.Mode = I2S_MODE_MASTER_RX;
-  hi2s3.Init.Standard = I2S_STANDARD_MSB;
-  hi2s3.Init.DataFormat = I2S_DATAFORMAT_16B;
-  hi2s3.Init.MCLKOutput = I2S_MCLKOUTPUT_ENABLE;
-  hi2s3.Init.AudioFreq = I2S_AUDIOFREQ_96K;
-  hi2s3.Init.CPOL = I2S_CPOL_LOW;
-  hi2s3.Init.ClockSource = I2S_CLOCK_PLL;
-  hi2s3.Init.FullDuplexMode = I2S_FULLDUPLEXMODE_DISABLE;
-  if (HAL_I2S_Init(&hi2s3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN I2S3_Init 2 */
-
-  /* USER CODE END I2S3_Init 2 */
-
-}
-
-/**
   * Enable DMA controller clock
   * Configure DMA for memory to memory transfers
   *   hdma_memtomem_dma2_stream0
@@ -406,9 +363,6 @@ static void MX_DMA_Init(void)
   }
 
   /* DMA interrupt init */
-  /* DMA1_Stream0_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
   /* DMA1_Stream3_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream3_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream3_IRQn);
@@ -465,6 +419,14 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : I2S3_WS_Pin */
+  GPIO_InitStruct.Pin = I2S3_WS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Alternate = GPIO_AF6_SPI3;
+  HAL_GPIO_Init(I2S3_WS_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pins : SPI1_SCK_Pin SPI1_MISO_Pin SPI1_MOSI_Pin */
   GPIO_InitStruct.Pin = SPI1_SCK_Pin|SPI1_MISO_Pin|SPI1_MOSI_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
@@ -487,6 +449,14 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : I2S3_MCK_Pin I2S3_SCK_Pin I2S3_SD_Pin */
+  GPIO_InitStruct.Pin = I2S3_MCK_Pin|I2S3_SCK_Pin|I2S3_SD_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Alternate = GPIO_AF6_SPI3;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pin : OTG_FS_OverCurrent_Pin */
   GPIO_InitStruct.Pin = OTG_FS_OverCurrent_Pin;
@@ -526,29 +496,6 @@ void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef *hi2s)
 	pI2S2_rxBuf = &I2S2_rxBuf[I2S2_BUFLEN/2];
 	I2S2_rxState = Cplt;
 	I2S2_txState = Cplt;
-}
-
-void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
-{
-	pI2S3_rxBuf = &I2S3_rxBuf[0];
-	I2S3_rxState = HalfCplt;
-}
-
-void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s)
-{
-	pI2S3_rxBuf = &I2S3_rxBuf[I2S3_BUFLEN/2];
-	I2S3_rxState = Cplt;
-}
-
-void MP45DT02_monoRq31(q31_t *Mbuf)
-{
-	while(I2S3_rxState == Busy)
-	{
-	}
-	I2S3_rxState = Busy;
-	PDM_Filter(pI2S3_rxBuf, Mbuf, &PDM1_filter_handler);
-	_printf("Value = %d\r\n", pI2S3_rxBuf[12]);
-	_printf("Value     = %d\r\n", pI2S3_rxBuf[11]);
 }
 
 void PMODI2S2_stereoRq31(q31_t *Lbuf, q31_t *Rbuf)

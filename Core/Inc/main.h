@@ -29,6 +29,7 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #define ARM_MATH_CM4 // select cortex M4 CMSIS lib
@@ -56,7 +57,6 @@ void Error_Handler(void);
 /* USER CODE BEGIN EFP */
 void PMODI2S2_stereoRq31(q31_t * Lbuf, q31_t * Rbuf);
 void PMODI2S2_stereoWq31(q31_t * Lbuf, q31_t * Rbuf);
-void MP45DT02_monoRq31(q31_t *Mbuf);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

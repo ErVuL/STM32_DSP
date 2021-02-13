@@ -310,7 +310,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 			/* If Backspace key: clear the last char */
 			if (Buf[i] == '\b')
 			{
-				if(leftAlign  && CDC_RX_DATA_PRINT)
+				if(leftAlign && CDC_RX_DATA_PRINT)
 				{
 					memcpy(&txBufferFS[txLen], "\b \b", 3);
 					txLen += 3;
@@ -324,7 +324,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 			{
 				if (CDC_RX_DATA_PRINT)
 				{
-					memcpy(&txBufferFS[txLen], "\r\nstm32@serial>> ", 17);
+					memcpy(&txBufferFS[txLen], "\r\n::STM@serial:: ", 17);
 					txLen += 17;
 					txLen %= APP_TX_DATA_SIZE;
 					leftAlign = 0;
@@ -453,7 +453,7 @@ void _cprintf(const char *format, ...)
 		}
 		if(CDC_RX_DATA_PRINT)
 		{
-			while(HOST_PORT_COM_OPEN && CDC_Transmit_FS((uint8_t *) "stm32@serial>> ", 15) == USBD_BUSY)
+			while(HOST_PORT_COM_OPEN && CDC_Transmit_FS((uint8_t *) "::STM@serial:: ", 15) == USBD_BUSY)
 			{
 			}
 		}
@@ -495,7 +495,7 @@ void CDC_Clear(void)
 {
 	if(CDC_RX_DATA_PRINT)
 	{
-		while(HOST_PORT_COM_OPEN && CDC_Transmit_FS((uint8_t *)"\033[2Jstm32@serial>> ", 19) == USBD_BUSY)
+		while(HOST_PORT_COM_OPEN && CDC_Transmit_FS((uint8_t *)"\033[2Jstm32@serial:: ", 19) == USBD_BUSY)
 		{
 		}
 	}
@@ -538,7 +538,7 @@ void CDC_rxPrintf_ON(void)
 {
 	if(!CDC_RX_DATA_PRINT)
 	{
-		while(HOST_PORT_COM_OPEN && CDC_Transmit_FS((uint8_t *)"\rstm32@serial>> ", 16) == USBD_BUSY)
+		while(HOST_PORT_COM_OPEN && CDC_Transmit_FS((uint8_t *)"\r::STM@serial:: ", 16) == USBD_BUSY)
 		{
 		}
 		CDC_RX_DATA_PRINT = TRUE;
