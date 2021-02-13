@@ -140,10 +140,12 @@ int main(void)
 	/* Start I2S communiation */
 	if((HAL_I2SEx_TransmitReceive_DMA(&hi2s2, I2S2_txBuf, I2S2_rxBuf, I2S2_BUFLEN / 2) != HAL_OK)
 			|| (HAL_I2S_Receive_DMA(&hi2s3, I2S3_rxBuf, I2S3_BUFLEN) != HAL_OK))
-	{	_cprintf("/!\\ ERROR : Unable to launch I2S DMA transfert !\r\n");
+	{	_cprintf("/!\\ ERROR : Unable to launch I2S DMA transfer !\r\n");
 	}else
 	{	_cprintf("I2S communication established\r\n");
 	}
+
+	/* Set serial interface to keyboard input mode */
 	CDC_rxPrintf_ON();
 
 	/* Initialize FIR  Filter */
@@ -159,7 +161,7 @@ int main(void)
     /* USER CODE END WHILE */
     /* USER CODE BEGIN 3 */
 
-		/* Command from Port COM available */
+		/* If command available from COM port */
 		if (CDC_RX_DATA_PENDING)
 		{
 			/* Read command */
@@ -180,12 +182,19 @@ int main(void)
 			{
 				Task = PROCESS;
 				CDC_rxPrintf_OFF();
+				_cprintf("Audio processing started\r\n");
 				_cprintf("Processing, type \"q\" to stop\r\n");
 			}
 			else
 			{
 				_cprintf("/!\\ Unknown Command !\r\n");
 			}
+		}
+
+		/* If serial COM port is not open process by default */
+		if(!HOST_PORT_COM_OPEN)
+		{	Task = PROCESS;
+			CDC_rxPrintf_OFF();
 		}
 
 		/* Execute selected task */
@@ -202,15 +211,21 @@ int main(void)
 
 					/* Write audio data */
 					PMODI2S2_stereoWq31(Lbuf, Rbuf);
+
+					/* Toggle Led and update chrono on port COM */
+					HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);
 					_cspin();
 					break;
 				}
 			default:
+			{
+				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
 				break;
+			}
+
 		}
 
-		/* Toggle Led and update chrono on port COM */
-		HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);
+
 
 	}
   /* USER CODE END 3 */
